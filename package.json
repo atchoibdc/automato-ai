@@ -1,9 +1,9 @@
 {
-  "name": "automato-wireframe-agent",
+  "name": "numberjuan-io",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Automato AI — UI Library browser and AI wireframe builder.",
+  "description": "numberJuan.io — Mid-Century Retro-Cartoon Web & Automation Studio with 650+ UI Library & AI Wireframe Machine.",
   "scripts": {
     "crawl": "node scripts/crawl-library.mjs",
     "catalog": "node scripts/build-catalog.mjs",

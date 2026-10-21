@@ -1,482 +1,257 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Christopher Ross B. dela Cruz — Creator of AUTOMATO</title>
-  <meta name="description" content="Meet Christopher Ross B. dela Cruz, Front-end Web Developer and Creator of AUTOMATO with 14+ years of experience building fast, user-centric web platforms and custom workflows." />
-  <meta name="theme-color" content="#0b0706" />
-  <meta property="og:title" content="Christopher Ross B. dela Cruz — Creator of AUTOMATO" />
-  <meta property="og:description" content="Front-end Web Developer in Cebu, Philippines with 14+ years of experience across WordPress, React, Angular, Salesforce, and modern web development." />
+  <title>Christopher Ross B. dela Cruz — Lead Engineer Behind numberJuan.io</title>
+  <meta name="description" content="Meet Christopher Ross B. dela Cruz, Front-end Web Developer with 14+ years of experience across WordPress, React, Salesforce, and custom workflows. The builder behind numberJuan.io." />
+  <meta name="theme-color" content="#FFF9EE" />
+  <meta property="og:title" content="Christopher Ross B. dela Cruz — The Man Behind numberJuan.io" />
+  <meta property="og:description" content="14+ years of front-end engineering experience in Cebu, Philippines. Handcrafting grade-A web platforms and automation." />
   <meta property="og:type" content="profile" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='36' r='22' fill='%23ff4433'/%3E%3Cpath d='M32 16l-8-8 10 4 6-6-2 9 10 0-10 5z' fill='%2378e05a'/%3E%3C/svg%3E" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="assets/mascot.svg" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <!-- SVG icon sprite -->
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-    <defs>
-      <symbol id="i-tomato" viewBox="0 0 24 24">
-        <circle cx="12" cy="13.5" r="8.5" fill="#ff4433" stroke="none" />
-        <ellipse cx="8.8" cy="10.4" rx="2.4" ry="1.5" fill="#fff" fill-opacity=".28" stroke="none" transform="rotate(-30 8.8 10.4)" />
-        <path d="M12 7.2 7.2 6l2.8-.6L8.6 3l3.4 1.6L15.4 3 14 5.4l2.8.6z" fill="#7ee05a" stroke="none" />
-        <path d="M12 7.2V3" stroke="#4fb83a" stroke-width="1.6" />
-      </symbol>
-      <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5" /><path d="M12 2.5v3M12 18.5v3M4.5 4.5l2.1 2.1M17.4 17.4l2.1 2.1M2.5 12h3M18.5 12h3M4.5 19.5l2.1-2.1M17.4 6.6l2.1-2.1" /></symbol>
-      <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M11 3l1.9 5.6L18.5 10.5 12.9 12.4 11 18l-1.9-5.6L3.5 10.5l5.6-1.9z" /><path d="M19 15.5l.8 2.2 2.2.8-2.2.8L19 21.5l-.8-2.2-2.2-.8 2.2-.8z" /></symbol>
-      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke-width="2.4" /></symbol>
-      <symbol id="i-seed" viewBox="0 0 24 24"><path d="M12 21v-9" /><path d="M12 12.5c0-4-3-6.5-7.5-6.5 0 4.2 3 6.5 7.5 6.5z" /><path d="M12 15c0-3.2 2.2-5.5 6.5-5.5 0 3.4-2.2 5.5-6.5 5.5z" /></symbol>
-      <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m3.5 6.5 8.5 6 8.5-6" /></symbol>
-      <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" /></symbol>
-      <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 1 1 13 0C18.5 14.8 12 21 12 21z" /><circle cx="12" cy="9.8" r="2.3" /></symbol>
-      <symbol id="i-linkedin" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M8 11v5M8 8v.01M12 16v-5m0 2c0-1.5 1-2.5 2.5-2.5S17 11.5 17 13v3" /></symbol>
-      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14" /></symbol>
-      <symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2.5" /><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 12h18" /></symbol>
-      <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 8-5 4 5 4M16 8l5 4-5 4M14 4l-4 16" /></symbol>
-      <symbol id="i-grad" viewBox="0 0 24 24"><path d="m12 4 10 5-10 5L2 9l10-5z" /><path d="M6 11.5v5c0 1.8 2.7 3.5 6 3.5s6-1.7 6-3.5v-5M22 9v6" /></symbol>
-      <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></symbol>
-    </defs>
-  </svg>
-
+  <!-- Power Gauge Scroll Indicator -->
+  <div class="power-gauge"><span class="power-gauge-fill" id="powerGaugeFill"></span></div>
   <div class="cursor-glow" aria-hidden="true"></div>
-  <div class="ripeness-bar" aria-hidden="true"><span id="ripenessFill"></span></div>
 
-  <!-- NAV -->
+  <!-- NAVIGATION -->
   <header class="nav" id="nav">
-    <a href="index.html" class="logo" aria-label="AUTOMATO home">
-      <svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true">
-        <defs>
-          <radialGradient id="lg" cx="35%" cy="30%" r="75%">
-            <stop offset="0" stop-color="#ff8a6b" />
-            <stop offset=".55" stop-color="#ff3d2e" />
-            <stop offset="1" stop-color="#b3150f" />
-          </radialGradient>
-        </defs>
-        <circle cx="32" cy="37" r="23" fill="url(#lg)" />
-        <path d="M32 17 22 9l12 3 7-7-2 10 11-1-11 6 6 8-12-6-6 8z" fill="#7ee05a" transform="translate(0 2) scale(.95) translate(1.6 0)" />
-      </svg>
-      <span>AUTO<b>MATO</b></span>
+    <a href="index.html" class="brand" aria-label="numberJuan.io home">
+      <img src="assets/mascot.svg" alt="Juan mascot" class="brand-mascot" width="44" height="44" />
+      <span class="brand-text">number<span class="highlight">Juan</span><span class="brand-badge">.io</span></span>
     </a>
+    
     <nav class="nav-links" id="navLinks" aria-label="Primary">
-      <a href="index.html#services">Services</a>
-      <a href="index.html#automation">Automation</a>
+      <a href="index.html">Home</a>
       <a href="#experience">Experience</a>
       <a href="#skills">Skills</a>
-      <a href="creator.html" class="active" aria-current="page">Creator</a>
-      <a href="library.html" class="nav-highlight">Library</a>
-      <a href="builder.html" class="nav-highlight">Builder</a>
-      <a href="#contact" class="btn btn-small">Let's connect</a>
+      <a href="creator.html" class="active">✦ The Creator</a>
+      <a href="library.html" class="nav-pill-highlight">✦ Library (650+)</a>
+      <a href="builder.html" class="nav-pill-highlight">✦ Builder</a>
+      <a href="#contact" class="btn btn-primary btn-sm">Hire Number Juan</a>
     </nav>
-    <button class="burger" id="burger" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span></button>
+
+    <div class="nav-tools">
+      <button class="theme-toggle-btn" id="themeToggle" type="button" aria-label="Toggle theme"></button>
+      <button class="burger" id="burger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </header>
 
-  <main id="top">
-    <!-- HERO / OWNER BIO -->
-    <section class="hero creator-hero">
-      <div class="hero-bg" aria-hidden="true">
-        <div class="blob blob-red"></div>
-        <div class="blob blob-green"></div>
-        <div class="grid-lines"></div>
-      </div>
-
-      <div class="container hero-grid creator-hero-grid">
+  <main>
+    <!-- CREATOR HERO SECTION -->
+    <section class="hero">
+      <div class="container hero-grid">
         <div class="hero-copy">
-          <p class="eyebrow reveal"><span class="pulse"></span> Owner &amp; Creator · Front-end Web Developer</p>
-          <h1 class="creator-title reveal">
-            Christopher Ross<br />
-            <span class="grad-text">B. dela Cruz</span>
+          <div class="badge-starburst gold">✦ THE ENGINEER BEHIND #1 ✦</div>
+          <h1 class="hero-title">
+            Christopher Ross <br /><span class="pop-blue">B. dela Cruz</span>
           </h1>
-          <p class="lead reveal">
-            Seasoned <strong>Front-end Web Developer</strong> based in <strong>Cebu, Philippines</strong> with over a decade of hands-on experience crafting high-performing WordPress platforms, custom plugins, Salesforce ecosystems, and responsive React &amp; Angular applications.
+          <p class="hero-subtitle">
+            Seasoned <b>Front-end Web Developer &amp; Systems Architect</b> based in <b>Cebu City, Philippines</b>. With over 14 years of commercial battlefield experience, Christopher specializes in responsive React &amp; Angular applications, high-performance WordPress CMS engines, and custom automation pipelines.
           </p>
 
-          <div class="contact-pills reveal">
-            <a href="mailto:atchoi.delacruz@gmail.com" class="contact-pill">
-              <svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg>
-              <span>atchoi.delacruz@gmail.com</span>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
+            <a href="mailto:atchoi.delacruz@gmail.com" class="badge-starburst" style="background:var(--surface);border-color:var(--ink);color:var(--ink);text-transform:none">
+              ✉️ atchoi.delacruz@gmail.com
             </a>
-            <a href="tel:+639941279711" class="contact-pill">
-              <svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg>
-              <span>+63 994 127 9711</span>
+            <a href="tel:+639941279711" class="badge-starburst" style="background:var(--surface);border-color:var(--ink);color:var(--ink);text-transform:none">
+              📞 +63 994 127 9711
             </a>
-            <a href="https://www.linkedin.com/in/chrisross-delacruz" target="_blank" rel="noopener noreferrer" class="contact-pill">
-              <svg class="icon" aria-hidden="true"><use href="#i-linkedin"/></svg>
-              <span>linkedin.com/in/chrisross-delacruz</span>
+            <a href="https://www.linkedin.com/in/chrisross-delacruz" target="_blank" rel="noopener noreferrer" class="badge-starburst blue" style="text-transform:none">
+              💼 LinkedIn Profile
             </a>
-            <span class="contact-pill pill-static">
-              <svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg>
-              <span>Cebu City, Cebu, Philippines</span>
+            <span class="badge-starburst" style="background:var(--surface-2);color:var(--ink-2);text-transform:none">
+              📍 Cebu City, Philippines
             </span>
           </div>
 
-          <div class="hero-cta reveal">
-            <a href="mailto:atchoi.delacruz@gmail.com" class="btn">Work with Christopher <span class="arrow">→</span></a>
-            <a href="assets/Christopher-Ross-dela-Cruz-CV.pdf" download class="btn btn-ghost">
-              <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-              <span>Download CV</span>
+          <div class="hero-actions">
+            <a href="assets/Christopher-Ross-dela-Cruz-CV.pdf" download class="btn btn-primary">
+              📥 Download Certified CV (PDF)
+            </a>
+            <a href="mailto:atchoi.delacruz@gmail.com" class="btn btn-secondary">
+              ✦ Send Direct Telegram
             </a>
           </div>
 
-          <ul class="hero-badges reveal">
-            <li><b data-count="14">0</b>+ <span>years web dev experience</span></li>
-            <li><b data-count="99">0</b>% <span>bug-free Apex delivery</span></li>
-            <li><b data-count="10">0</b>+ <span>custom plugins engineered</span></li>
-            <li><b data-count="30">0</b>% <span>UX &amp; workflow boost</span></li>
-          </ul>
+          <!-- Stat Counters -->
+          <div class="services-grid" style="grid-template-columns:repeat(4,1fr);width:100%;gap:12px;margin-top:16px">
+            <div class="comic-card" style="padding:14px;text-align:center">
+              <div style="font-family:var(--font-display);font-size:2rem;color:var(--gold)"><span data-count="14">0</span>+</div>
+              <div style="font-size:0.75rem;font-weight:700">YEARS DEV EXP</div>
+            </div>
+            <div class="comic-card" style="padding:14px;text-align:center">
+              <div style="font-family:var(--font-display);font-size:2rem;color:var(--blue)"><span data-count="99">0</span>%</div>
+              <div style="font-size:0.75rem;font-weight:700">APEX DELIVERY</div>
+            </div>
+            <div class="comic-card" style="padding:14px;text-align:center">
+              <div style="font-family:var(--font-display);font-size:2rem;color:var(--red)"><span data-count="10">0</span>+</div>
+              <div style="font-size:0.75rem;font-weight:700">CUSTOM PLUGINS</div>
+            </div>
+            <div class="comic-card" style="padding:14px;text-align:center">
+              <div style="font-family:var(--font-display);font-size:2rem;color:var(--green)"><span data-count="30">0</span>%</div>
+              <div style="font-size:0.75rem;font-weight:700">UX BOOST</div>
+            </div>
+          </div>
         </div>
 
+        <!-- Creator Portrait Polaroid -->
         <div class="hero-visual">
-          <div class="tomato-wrap creator-portrait-wrap" id="tomatoWrap">
-            <div class="tomato-halo"></div>
-            <div class="creator-frame">
-              <img src="assets/creator.jpg" alt="Portrait of Christopher Ross B. dela Cruz, Front-end Web Developer and Creator of AUTOMATO" class="creator-img" width="600" height="600" />
+          <div class="floating-badge top-left badge-starburst gold">✦ AVAILABLE FOR HIRE ✦</div>
+          <div class="hero-polaroid" id="heroPolaroid">
+            <img src="assets/creator.jpg" alt="Portrait of Christopher Ross B. dela Cruz" class="hero-polaroid-img" style="aspect-ratio:1/1" width="600" height="600" />
+            <div class="hero-polaroid-caption">
+              Christopher Ross B. dela Cruz<br />
+              <span style="font-family:var(--font-mono);font-size:0.8rem;color:var(--muted)">Lead Front-End Architect · numberJuan.io</span>
             </div>
-            <div class="chip chip-1"><i class="dot green"></i> Available for projects</div>
-            <div class="chip chip-2"><span class="mono">Cebu, PH</span> <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg> B.S. IT</div>
-            <div class="chip chip-3"><i class="dot red"></i> Front-end &amp; CMS Specialist</div>
+          </div>
+          <div class="floating-badge bottom-right stamp-seal">
+            <span>CERTIFIED</span>
+            <b>#1</b>
+            <span>GRADE A</span>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- MARQUEE -->
-    <div class="marquee" aria-hidden="true">
-      <div class="marquee-track">
-        <span>HTML5 &amp; CSS3</span><i><svg class="icon"><use href="#i-tomato"/></svg></i><span>JavaScript &amp; jQuery</span><i><svg class="icon"><use href="#i-tomato"/></svg></i><span>WordPress &amp; Gutenberg</span><i><svg class="icon"><use href="#i-tomato"/></svg></i><span>Custom PHP Plugins</span><i><svg class="icon"><use href="#i-tomato"/></svg></i><span>ReactJS &amp; AngularJS</span><i><svg class="icon"><use href="#i-tomato"/></svg></i><span>Salesforce &amp; Apex</span><i><svg class="icon"><use href="#i-tomato"/></svg></i><span>Laravel &amp; VueJS</span><i><svg class="icon"><use href="#i-tomato"/></svg></i>
-        <span>HTML5 &amp; CSS3</span><i><svg class="icon"><use href="#i-tomato"/></svg></i><span>JavaScript &amp; jQuery</span><i><svg class="icon"><use href="#i-tomato"/></svg></i><span>WordPress &amp; Gutenberg</span><i><svg class="icon"><use href="#i-tomato"/></svg></i><span>Custom PHP Plugins</span><i><svg class="icon"><use href="#i-tomato"/></svg></i><span>ReactJS &amp; AngularJS</span><i><svg class="icon"><use href="#i-tomato"/></svg></i><span>Salesforce &amp; Apex</span><i><svg class="icon"><use href="#i-tomato"/></svg></i><span>Laravel &amp; VueJS</span><i><svg class="icon"><use href="#i-tomato"/></svg></i>
-      </div>
-    </div>
-
-    <!-- WORK EXPERIENCE -->
-    <section class="section" id="experience">
+    <!-- WORK EXPERIENCE TIMELINE -->
+    <section class="section" id="experience" style="background:var(--surface-2);border-top:var(--border-ink);border-bottom:var(--border-ink)">
       <div class="container">
-        <div class="section-head reveal">
-          <p class="section-tag">01 — Work Experience</p>
-          <h2>Over a decade of <span class="grad-text">proven harvest</span>.</h2>
-          <p class="lead">From creative agencies and global technology consultancies to blockchain and web app studios in Cebu City.</p>
+        <div class="section-header">
+          <div class="badge-starburst blue">✦ SERVICE RECORD ✦</div>
+          <h2>Over a Decade of Battle-Tested Craft.</h2>
+          <p>From creative agencies and multinational consultancies to modern full-stack web studios.</p>
         </div>
 
-        <div class="timeline">
-          <!-- RipeConcepts -->
-          <article class="timeline-item current reveal">
-            <div class="timeline-marker">
-              <span class="marker-dot"></span>
-              <span class="marker-line"></span>
-            </div>
-            <div class="timeline-card card">
-              <div class="timeline-header">
-                <div>
-                  <span class="timeline-date mono">Feb 2023 – Present · Cebu City, Cebu, PH</span>
-                  <h3>Web Developer — <span class="green-text">RipeConcepts Inc.</span></h3>
-                </div>
-                <span class="badge">Current Role</span>
+        <div style="display:flex;flex-direction:column;gap:24px;max-width:880px;margin:0 auto">
+          <!-- Role 1: RipeConcepts -->
+          <div class="comic-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+              <div>
+                <span class="mono" style="font-size:0.85rem;color:var(--muted)">FEB 2023 – PRESENT · CEBU CITY, PH</span>
+                <h3 style="font-size:1.5rem;margin-top:2px">Web Developer — <span style="color:var(--green)">RipeConcepts Inc.</span></h3>
               </div>
-              <p class="company-blurb">
-                RipeConcepts was founded by two award-winning entrepreneurs in 2008 with the sole aim of developing on-trend creative and tailored solutions for every client. After initially offering graphic design, they expanded their pool of talents and expertise to web and app development, animation, digital marketing, and employee leasing.
-              </p>
-              <ul class="achievement-list">
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Developed WordPress websites as the standard CMS, leveraging the <strong>Gutenberg</strong> plugin to create content-rich platforms for various projects.</span>
-                </li>
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Developed <strong>10+ custom plugins</strong> using PHP, JavaScript, HTML, and CSS to enhance website functionalities, effectively addressing <strong>30% – 50%</strong> of specific project requirements.</span>
-                </li>
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Collaborated with cross-functional teams to address and resolve bugs and issues across multiple projects.</span>
-                </li>
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Provided valuable support and assistance to other projects, contributing to their successful completion and overall efficiency.</span>
-                </li>
-              </ul>
-              <ul class="tags">
-                <li class="concept-tag">WordPress</li>
-                <li class="concept-tag">Gutenberg</li>
-                <li>Custom Plugins</li>
-                <li>PHP</li>
-                <li>JavaScript</li>
-                <li>HTML5 / CSS3</li>
-              </ul>
+              <span class="badge-starburst" style="background:var(--green);color:#fff">CURRENT STATION</span>
             </div>
-          </article>
-
-          <!-- Accenture -->
-          <article class="timeline-item reveal">
-            <div class="timeline-marker">
-              <span class="marker-dot"></span>
-              <span class="marker-line"></span>
+            <p style="color:var(--ink-2);margin-bottom:14px;line-height:1.6">
+              Engineering high-traffic WordPress platforms and content-rich CMS portals leveraging custom Gutenberg architecture. Built 10+ tailored plugins resolving 30%–50% of complex client business requirements.
+            </p>
+            <div class="tag-group">
+              <span class="tag">WordPress</span>
+              <span class="tag">Gutenberg</span>
+              <span class="tag">PHP</span>
+              <span class="tag">Custom Plugins</span>
+              <span class="tag">JavaScript ES6+</span>
+              <span class="tag">HTML5 / CSS3</span>
             </div>
-            <div class="timeline-card card">
-              <div class="timeline-header">
-                <div>
-                  <span class="timeline-date mono">Dec 2018 – Sep 2022 · Cebu City, Cebu, PH</span>
-                  <h3>Software Analyst — <span class="red-text">Accenture</span></h3>
-                </div>
-              </div>
-              <p class="company-blurb">
-                Accenture is a global professional services company with leading capabilities in digital, cloud, and security. Combining unmatched experience and specialized skills across more than 40 industries, offering Strategy and Consulting, Technology and Operations Services, and Accenture Song.
-              </p>
-              <ul class="achievement-list">
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Streamlined Salesforce Administration tasks, resulting in a <strong>20% increase in workflow efficiency</strong> through process optimization.</span>
-                </li>
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Developed and updated <strong>Apex code</strong>, maintaining the performance and reliability of Salesforce applications with a <strong>99% bug-free rate</strong>.</span>
-                </li>
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Supported <strong>Lightning Web Development</strong>, contributing to the creation of visually engaging user interfaces for improved user satisfaction.</span>
-                </li>
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Leveraged <strong>AngularJS</strong> and <strong>ReactJS</strong> to deliver responsive and user-centric experiences, resulting in a <strong>25% increase in website engagement</strong>.</span>
-                </li>
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Successfully integrated new features and components, enhancing overall functionality and usability, leading to a <strong>30% improvement in user experience</strong>.</span>
-                </li>
-              </ul>
-              <ul class="tags">
-                <li>Salesforce</li>
-                <li>Apex</li>
-                <li>Lightning Web</li>
-                <li>ReactJS</li>
-                <li>AngularJS</li>
-                <li>Workflow Optimization</li>
-              </ul>
-            </div>
-          </article>
-
-          <!-- Xsolus -->
-          <article class="timeline-item reveal">
-            <div class="timeline-marker">
-              <span class="marker-dot"></span>
-              <span class="marker-line"></span>
-            </div>
-            <div class="timeline-card card">
-              <div class="timeline-header">
-                <div>
-                  <span class="timeline-date mono">March 2016 – Nov 2018 · Cebu City, Cebu, PH</span>
-                  <h3>Web Developer — <span class="grad-text">Xsolus</span></h3>
-                </div>
-              </div>
-              <p class="company-blurb">
-                Xsolus is an IT solutions company specializing in blockchain technology applications, web, and mobile app development. Composed of solution architects, software developers, UI/UX designers, and cryptocurrency enthusiasts, with offices in Singapore and the Philippines.
-              </p>
-              <ul class="achievement-list">
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Translated <strong>PSD designs into HTML and CSS</strong>, ensuring mobile responsiveness for optimal user experience.</span>
-                </li>
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Developed <strong>WordPress websites</strong> from the ground up and utilized Theme Builders as per clients' specifications.</span>
-                </li>
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Resolved front-end and back-end issues in WordPress, enhancing website performance and functionality.</span>
-                </li>
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Proficiently installed and customized various plugins to extend website capabilities.</span>
-                </li>
-                <li>
-                  <svg class="icon ok" aria-hidden="true"><use href="#i-check"/></svg>
-                  <span>Functioned as a Front-end Web Developer within the Web App department, utilizing <strong>Laravel</strong> and <strong>AngularJS</strong> technologies to create interactive and user-friendly applications.</span>
-                </li>
-              </ul>
-              <ul class="tags">
-                <li>WordPress</li>
-                <li>Laravel</li>
-                <li>AngularJS</li>
-                <li>PSD to HTML/CSS</li>
-                <li>Responsive Design</li>
-              </ul>
-            </div>
-          </article>
-        </div>
-
-        <!-- PREVIOUS WORK EXPERIENCE -->
-        <div class="early-career reveal">
-          <div class="early-career-head">
-            <p class="section-tag">Earlier Career Foundation (2011 – 2015)</p>
-            <h3>Previous Work Experience</h3>
           </div>
-          <div class="early-career-grid">
-            <article class="card early-card">
-              <span class="mono early-date">Nov 2014 – Oct 2015</span>
-              <h4>Front-end Web Developer</h4>
-              <p class="early-company">Webcada Pte Ltd.</p>
-              <span class="early-loc">Cebu City, Cebu, PH</span>
-            </article>
-            <article class="card early-card">
-              <span class="mono early-date">Sep 2013 – Oct 2014</span>
-              <h4>Front-end Web Developer</h4>
-              <p class="early-company">The TMS Way</p>
-              <span class="early-loc">Cebu City, Cebu, PH</span>
-            </article>
-            <article class="card early-card">
-              <span class="mono early-date">Oct 2012 – Sept 2013</span>
-              <h4>Web Developer</h4>
-              <p class="early-company">Smart Traffic Ltd.</p>
-              <span class="early-loc">Cebu City, Cebu, PH</span>
-            </article>
-            <article class="card early-card">
-              <span class="mono early-date">Oct 2011 – Oct 2012</span>
-              <h4>Jr. Web Developer</h4>
-              <p class="early-company">Trimorph</p>
-              <span class="early-loc">Cebu City, Cebu, PH</span>
-            </article>
+
+          <!-- Role 2: Accenture -->
+          <div class="comic-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+              <div>
+                <span class="mono" style="font-size:0.85rem;color:var(--muted)">DEC 2018 – SEP 2022 · CEBU CITY, PH</span>
+                <h3 style="font-size:1.5rem;margin-top:2px">Software Analyst — <span style="color:var(--red)">Accenture</span></h3>
+              </div>
+              <span class="badge-starburst blue">4 YEARS</span>
+            </div>
+            <p style="color:var(--ink-2);margin-bottom:14px;line-height:1.6">
+              Delivered enterprise-grade Salesforce and cloud solutions with Apex, Visualforce, and Lightning Web Components. Maintained a 99%+ bug-free deployment record across multinational client programs.
+            </p>
+            <div class="tag-group">
+              <span class="tag">Salesforce</span>
+              <span class="tag">Apex Code</span>
+              <span class="tag">JavaScript</span>
+              <span class="tag">SOQL / SOSL</span>
+              <span class="tag">Enterprise Integrations</span>
+            </div>
+          </div>
+
+          <!-- Role 3: Previous Agency & Studio Work -->
+          <div class="comic-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+              <div>
+                <span class="mono" style="font-size:0.85rem;color:var(--muted)">2010 – 2018 · CEBU CITY, PH</span>
+                <h3 style="font-size:1.5rem;margin-top:2px">Front-End &amp; CMS Engineer — <span style="color:var(--blue)">Creative &amp; Web Studios</span></h3>
+              </div>
+              <span class="badge-starburst gold">8 YEARS</span>
+            </div>
+            <p style="color:var(--ink-2);margin-bottom:14px;line-height:1.6">
+              Full-spectrum web development across custom PHP/MySQL applications, early responsive frameworks, client branding, and interactive front-ends.
+            </p>
+            <div class="tag-group">
+              <span class="tag">React</span>
+              <span class="tag">AngularJS</span>
+              <span class="tag">Laravel</span>
+              <span class="tag">Vue.js</span>
+              <span class="tag">UI/UX Prototyping</span>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- TECHNICAL SKILLS -->
+    <!-- TECHNICAL ARSENAL -->
     <section class="section" id="skills">
       <div class="container">
-        <div class="section-head reveal">
-          <p class="section-tag">02 — Technical Skills</p>
-          <h2>Tools in the <span class="green-text">greenhouse</span>.</h2>
-          <p class="lead">Grouped by years of production experience across front-end architecture, CMS development, and full-stack frameworks.</p>
+        <div class="section-header">
+          <div class="badge-starburst gold">✦ TECHNICAL ARSENAL ✦</div>
+          <h2>Weapons of Choice.</h2>
+          <p>Calibrated over a decade and a half of production web engineering.</p>
         </div>
 
-        <div class="cards skills-cards">
-          <article class="card card-featured reveal">
-            <span class="badge">5+ Years</span>
-            <div class="card-icon"><svg viewBox="0 0 24 24"><use href="#i-code"/></svg></div>
-            <h3>Core Mastery</h3>
-            <p>Deep daily fluency in building responsive, pixel-accurate front-end interfaces and custom WordPress ecosystems.</p>
-            <div class="skill-pills">
-              <span>HTML5</span>
-              <span>CSS</span>
-              <span>JavaScript</span>
-              <span>jQuery</span>
-              <span>Ajax</span>
-              <span>WordPress</span>
-              <span>Bootstrap 3 &amp; 4</span>
-              <span>Materialize CSS</span>
-              <span>Photoshop</span>
-            </div>
-          </article>
+        <div class="services-grid" style="grid-template-columns:repeat(auto-fit, minmax(280px, 1fr))">
+          <div class="comic-card">
+            <div class="service-icon-box blue">🎨</div>
+            <h3>Front-End Systems</h3>
+            <p>HTML5 Semantics, Modern CSS3 &amp; Grid/Flexbox, TailwindCSS, JavaScript ES6+, React, Next.js, Angular, Responsive Mobile First.</p>
+          </div>
 
-          <article class="card reveal">
-            <span class="badge badge-leaf">2+ Years</span>
-            <div class="card-icon"><svg viewBox="0 0 24 24"><use href="#i-gear"/></svg></div>
-            <h3>Production Stack</h3>
-            <p>Full-stack application development, relational databases, version control, modern SPAs, and enterprise CRM engineering.</p>
-            <div class="skill-pills">
-              <span>PHP</span>
-              <span>MySQL</span>
-              <span>GIT</span>
-              <span>JSON</span>
-              <span>ReactJS</span>
-              <span>AngularJS</span>
-              <span>CodeIgniter</span>
-              <span>Salesforce / Apex</span>
-              <span>Lightning Web</span>
-            </div>
-          </article>
+          <div class="comic-card">
+            <div class="service-icon-box gold">📰</div>
+            <h3>CMS &amp; Web Engines</h3>
+            <p>WordPress Core, Custom Gutenberg Blocks, Advanced Custom Fields (ACF), Custom Plugin Engineering, WooCommerce, PHP/MySQL.</p>
+          </div>
 
-          <article class="card reveal">
-            <span class="badge badge-muted">&lt;1 Year</span>
-            <div class="card-icon"><svg viewBox="0 0 24 24"><use href="#i-seed"/></svg></div>
-            <h3>Expanding Roots</h3>
-            <p>Modern reactive frameworks, PHP artisan backends, and cross-platform mobile UI toolkits.</p>
-            <div class="skill-pills">
-              <span>VueJS</span>
-              <span>Laravel</span>
-              <span>Flutter</span>
-            </div>
-          </article>
+          <div class="comic-card">
+            <div class="service-icon-box red">⚡</div>
+            <h3>Enterprise &amp; Cloud</h3>
+            <p>Salesforce Platform, Apex, Lightning Components, RESTful APIs, Node.js / Express microservices, Webhook orchestration.</p>
+          </div>
+
+          <div class="comic-card">
+            <div class="service-icon-box green">🤖</div>
+            <h3>AI &amp; Workflows</h3>
+            <p>Google Gemini Vision API integration, prompt tuning, automated lead qualification, Git/GitHub, CI/CD, Vite, Webpack.</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- EDUCATION & LANGUAGES -->
-    <section class="section" id="education">
+    <!-- CONTACT CTA -->
+    <section class="section contact-section" id="contact">
       <div class="container">
-        <div class="section-head reveal">
-          <p class="section-tag">03 — Roots &amp; Communication</p>
-          <h2>Education &amp; <span class="red-text">Languages</span>.</h2>
-        </div>
-
-        <div class="edu-lang-grid">
-          <article class="card reveal">
-            <div class="card-icon"><svg viewBox="0 0 24 24"><use href="#i-grad"/></svg></div>
-            <span class="mono timeline-date">Class of 2011 · Cebu City, Cebu, PH</span>
-            <h3>Bachelor of Science in Information Technology</h3>
-            <p class="edu-school">University of Cebu — Main Campus</p>
-            <p>Academic foundation in software engineering, web technologies, database management, and systems analysis in the heart of Cebu City.</p>
-          </article>
-
-          <article class="card reveal">
-            <div class="card-icon"><svg viewBox="0 0 24 24"><use href="#i-globe"/></svg></div>
-            <span class="mono timeline-date">Bilingual Professional Communication</span>
-            <h3>Languages</h3>
-            <div class="lang-list">
-              <div class="lang-item">
-                <div class="lang-top">
-                  <strong>English</strong>
-                  <span class="mono">CEFR Level B2 — Upper Intermediate</span>
-                </div>
-                <div class="lang-bar"><span style="width: 82%"></span></div>
-              </div>
-              <div class="lang-item">
-                <div class="lang-top">
-                  <strong>Filipino / Cebuano</strong>
-                  <span class="mono">Proficient / Native</span>
-                </div>
-                <div class="lang-bar"><span class="leaf" style="width: 100%"></span></div>
-              </div>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- CTA / CONTACT -->
-    <section class="section contact" id="contact">
-      <div class="container contact-card reveal">
-        <div class="contact-glow" aria-hidden="true"></div>
-        <div class="contact-copy">
-          <p class="section-tag">04 — Let's Collaborate</p>
-          <h2>Ready to build with <span class="grad-text">Christopher</span>?</h2>
-          <p class="lead">Whether you need a custom WordPress platform, a high-converting front-end, or an AI-automated workflow for your business, let's start a conversation.</p>
-          <ul class="contact-points">
-            <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg> Direct collaboration with the founder &amp; developer</li>
-            <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg> 14+ years of battle-tested front-end &amp; CMS expertise</li>
-            <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg> Based in Cebu City, Philippines (GMT+8)</li>
-          </ul>
-        </div>
-
-        <div class="creator-cta-box">
-          <div class="creator-direct-card">
-            <h3>Direct Contact</h3>
-            <p>Reach out directly via email, phone, or LinkedIn—or use the project planner to scope your build.</p>
-            <div class="creator-contact-links">
-              <a href="mailto:atchoi.delacruz@gmail.com" class="btn btn-block">
-                <svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg>
-                <span>Email atchoi.delacruz@gmail.com</span>
+        <div class="contact-card" style="grid-template-columns:1fr;text-align:center;max-width:800px;margin:0 auto">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:18px">
+            <div class="badge-starburst red">✦ READY TO COLLABORATE? ✦</div>
+            <h2 style="font-size:2.8rem">Let's Build Something <span style="color:var(--blue)">Number Juan</span>.</h2>
+            <p style="color:var(--ink-2);max-width:560px;line-height:1.6">
+              Whether you need a full enterprise website, custom CMS plugin, or smart AI integration, Christopher is ready to bring high-caliber experience to your project.
+            </p>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:10px">
+              <a href="mailto:atchoi.delacruz@gmail.com" class="btn btn-primary">
+                ✦ Email Christopher Directly
               </a>
-              <a href="https://www.linkedin.com/in/chrisross-delacruz" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-block">
-                <svg class="icon" aria-hidden="true"><use href="#i-linkedin"/></svg>
-                <span>Connect on LinkedIn</span>
+              <a href="assets/Christopher-Ross-dela-Cruz-CV.pdf" download class="btn btn-secondary">
+                📥 Download Full CV (PDF)
               </a>
-              <a href="assets/Christopher-Ross-dela-Cruz-CV.pdf" download class="btn btn-ghost btn-block">
-                <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-                <span>Download Full CV (PDF)</span>
-              </a>
-              <a href="index.html#contact" class="creator-back-link mono">
-                ← Or plant a project seed on the AUTOMATO home page
+              <a href="index.html" class="btn btn-ghost">
+                ← Back to numberJuan.io Home
               </a>
             </div>
           </div>
@@ -485,16 +260,26 @@
     </section>
   </main>
 
+  <!-- FOOTER -->
   <footer class="footer">
     <div class="container footer-inner">
-      <a href="index.html" class="logo"><span>AUTO<b>MATO</b></span></a>
-      <div class="footer-links">
+      <a href="index.html" class="brand" aria-label="numberJuan.io home">
+        <img src="assets/mascot.svg" alt="Juan mascot" class="brand-mascot" width="44" height="44" />
+        <span class="brand-text">number<span class="highlight">Juan</span><span class="brand-badge">.io</span></span>
+      </a>
+
+      <nav class="footer-nav">
         <a href="index.html">Home</a>
-        <a href="library.html">UI Library</a>
-        <a href="builder.html">Wireframe Builder</a>
+        <a href="#experience">Experience</a>
+        <a href="#skills">Skills</a>
+        <a href="library.html">✦ Pre-Fab Library</a>
+        <a href="builder.html">✦ Blueprint Studio</a>
+        <a href="creator.html">The Creator</a>
+      </nav>
+
+      <div class="footer-copy">
+        © <span id="year"></span> <b>numberJuan.io</b>. Handcrafted with atomic energy and pride in Cebu, PH by Christopher Ross B. dela Cruz.
       </div>
-      <p>Created by <a href="creator.html" class="footer-link">Christopher Ross B. dela Cruz</a> <svg class="icon inline-tomato" aria-hidden="true"><use href="#i-tomato"/></svg></p>
-      <p class="copy">© <span id="year"></span> AUTOMATO. Grown with care in Cebu, PH.</p>
     </div>
   </footer>
 

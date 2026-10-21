@@ -6,7 +6,7 @@ export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 export const ICON = {
-  logo: '<svg class="automato-mark" viewBox="0 0 64 64" width="22" height="22" aria-hidden="true"><defs><radialGradient id="lg-tomato" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#ff8a6b"/><stop offset="55%" stop-color="#ff3d2e"/><stop offset="100%" stop-color="#b3150f"/></radialGradient></defs><circle cx="32" cy="37" r="23" fill="url(#lg-tomato)"/><path d="M32 17 22 9l12 3 7-7-2 10 11-1-11 6 6 8-12-6-6 8z" fill="#7ee05a" transform="translate(0 2) scale(.95) translate(1.6 0)"/></svg>',
+  logo: '<img src="assets/mascot.svg" alt="Juan" width="24" height="24" style="border-radius:50%;vertical-align:middle;border:1.5px solid #18120C"/>',
   search: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
   moon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M21 13a8 8 0 0 1-10-10 9 9 0 1 0 10 10z"/></svg>',
   sun: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',

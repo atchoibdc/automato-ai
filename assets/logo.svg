@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" width="240" height="60">
+  <defs>
+    <radialGradient id="starGold" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </radialGradient>
+  </defs>
+  <!-- Mascot Icon on Left -->
+  <g transform="translate(6, 5) scale(0.5)">
+    
+  <defs>
+    <radialGradient id="goldGrad" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="60%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </radialGradient>
+    <linearGradient id="blueGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  <!-- Atomic Starburst Glow -->
+  <path d="M50 2 L56 36 L90 20 L64 46 L98 50 L64 54 L90 80 L56 64 L50 98 L44 64 L10 80 L36 54 L2 50 L36 46 L10 20 L44 36 Z" fill="url(#goldGrad)" opacity="0.22"/>
+  <!-- Outer Badge Circle with comic stroke -->
+  <circle cx="50" cy="50" r="44" fill="#FFF9EE" stroke="#18120C" stroke-width="4"/>
+  <circle cx="50" cy="50" r="39" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="3,3"/>
+  
+  <!-- Cartoon Hair (retro pompadour / swoop) -->
+  <path d="M26 44 C26 24 38 18 52 18 C66 18 76 26 74 40 C73 34 68 28 58 28 C46 28 36 34 32 44 Z" fill="#18120C"/>
+  <path d="M36 26 C45 16 65 18 72 28 C68 22 55 20 44 24 Z" fill="#3B82F6" opacity="0.3"/>
+
+  <!-- Face -->
+  <path d="M30 42 C30 62 40 72 50 72 C60 72 70 62 70 42 C70 32 60 26 50 26 C40 26 30 32 30 42 Z" fill="#FED7AA" stroke="#18120C" stroke-width="3.5"/>
+  
+  <!-- Ears -->
+  <circle cx="28" cy="46" r="6" fill="#FDBA74" stroke="#18120C" stroke-width="2.5"/>
+  <circle cx="72" cy="46" r="6" fill="#FDBA74" stroke="#18120C" stroke-width="2.5"/>
+
+  <!-- Cheerful Winking Eyes -->
+  <ellipse cx="42" cy="42" rx="4.5" ry="5.5" fill="#FFF" stroke="#18120C" stroke-width="2"/>
+  <circle cx="43" cy="42" r="2.8" fill="#1D4ED8"/>
+  <circle cx="44" cy="40" r="1" fill="#FFF"/>
+  <path d="M56 42 Q60 38 64 43" fill="none" stroke="#18120C" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Rosy Cartoon Cheeks -->
+  <circle cx="35" cy="49" r="4" fill="#F87171" opacity="0.6"/>
+  <circle cx="65" cy="49" r="4" fill="#F87171" opacity="0.6"/>
+
+  <!-- Nose -->
+  <path d="M50 43 Q53 47 49 48" fill="none" stroke="#18120C" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Broad Enthusiastic Cartoon Smile -->
+  <path d="M38 52 Q50 66 62 52 Z" fill="#DC2626" stroke="#18120C" stroke-width="2.5"/>
+  <path d="M40 52 Q50 56 60 52 Z" fill="#FFF"/>
+
+  <!-- Retro Collar & Golden Necktie -->
+  <path d="M38 70 L50 82 L62 70" fill="#FFF" stroke="#18120C" stroke-width="2.5"/>
+  <path d="M47 72 L53 72 L55 90 L50 94 L45 90 Z" fill="url(#goldGrad)" stroke="#18120C" stroke-width="2.5"/>
+  <!-- Blue Vest Shoulders -->
+  <path d="M22 84 C26 74 38 72 42 74 L46 88 L30 92 Z" fill="url(#blueGrad)" stroke="#18120C" stroke-width="2.5"/>
+  <path d="M78 84 C74 74 62 72 58 74 L54 88 L70 92 Z" fill="url(#blueGrad)" stroke="#18120C" stroke-width="2.5"/>
+
+  <!-- Number 1 Star Badge on Vest -->
+  <circle cx="32" cy="80" r="6" fill="#F59E0B" stroke="#18120C" stroke-width="1.8"/>
+  <text x="32" y="83" font-family="Impact, Arial Black, sans-serif" font-size="7" font-weight="bold" fill="#18120C" text-anchor="middle">#1</text>
+
+  </g>
+  
+  <!-- Text Wordmark -->
+  <text x="64" y="38" font-family="'Righteous', 'Impact', sans-serif" font-size="28" font-weight="bold" fill="#18120C" letter-spacing="-0.5">number<tspan fill="#1D4ED8">Juan</tspan></text>
+  
+  <!-- .io Badge -->
+  <g transform="translate(196, 17)">
+    <rect width="36" height="20" rx="6" fill="url(#starGold)" stroke="#18120C" stroke-width="2"/>
+    <text x="18" y="14" font-family="'Space Mono', monospace, sans-serif" font-size="11" font-weight="bold" fill="#18120C" text-anchor="middle">.io</text>
+  </g>
+</svg>
