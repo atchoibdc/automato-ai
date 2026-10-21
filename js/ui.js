@@ -21,14 +21,17 @@ export function initTheme(btn) {
   const set = (t) => {
     document.documentElement.dataset.theme = t;
     try {
+      localStorage.setItem('numberjuan-theme', t);
       localStorage.setItem('automato-theme', t);
-      localStorage.setItem('atelier-theme', t);
     } catch {}
-    if (btn) { btn.innerHTML = t === 'dark' ? ICON.sun : ICON.moon; btn.setAttribute('aria-label', t === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'); }
+    if (btn) {
+      btn.innerHTML = t === 'dark' ? ICON.sun : ICON.moon;
+      btn.setAttribute('aria-label', t === 'dark' ? 'Switch to Vintage Day Mode' : 'Switch to Retro Night Mode');
+    }
   };
   let t = null;
-  try { t = localStorage.getItem('automato-theme') || localStorage.getItem('atelier-theme'); } catch {}
-  set(t || 'dark');
+  try { t = localStorage.getItem('numberjuan-theme') || localStorage.getItem('automato-theme'); } catch {}
+  set(t || 'light');
   btn?.addEventListener('click', () => set(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 }
 

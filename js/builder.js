@@ -6,8 +6,12 @@ const ASPECTS = [['21:9', 21 / 9], ['16:9', 16 / 9], ['3:2', 3 / 2], ['4:3', 4 /
 const snap = (a) => ASPECTS.reduce((b, x) => (Math.abs(x[1] - a) < Math.abs(b[1] - a) ? x : b))[1];
 const STORE = 'automato-recipe';
 
-$('#logo').innerHTML = ICON.logo;
-$('#pk-close').innerHTML = ICON.close;
+const logoEl = $('#logo');
+if (logoEl) logoEl.innerHTML = ICON.logo;
+
+const pkClose = $('#pk-close');
+if (pkClose) pkClose.innerHTML = ICON.close;
+
 initTheme($('#theme'));
 
 const { ctx, index } = await loadCore();

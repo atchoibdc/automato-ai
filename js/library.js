@@ -9,9 +9,15 @@ const GROUPS = [
   ['Mobile', ['app-mobile', 'mobile-nav', 'mobile-gestures']],
 ];
 
-$('#logo').innerHTML = ICON.logo;
-$('#search-ico').innerHTML = ICON.search;
-$('#v-close').innerHTML = ICON.close;
+const logoEl = $('#logo');
+if (logoEl) logoEl.innerHTML = ICON.logo;
+
+const searchIco = $('#search-ico');
+if (searchIco) searchIco.innerHTML = ICON.search;
+
+const closeBtn = $('#v-close');
+if (closeBtn) closeBtn.innerHTML = ICON.close;
+
 initTheme($('#theme'));
 
 const { ctx, index } = await loadCore();
