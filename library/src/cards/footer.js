@@ -1,0 +1,410 @@
+// Footer cards. Wireframe windows for the page-end patterns, real components for the small ones.
+(() => {
+const BASE = `.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .win{position:relative;width:86%;height:86%;display:flex;flex-direction:column;background:var(--ml-bg);border-radius:12px;box-shadow:var(--ml-shadow);overflow:hidden}
+.d .bar{flex:none;display:flex;align-items:center;gap:4px;padding:7px 10px;border-bottom:1px solid var(--ml-line);background:var(--ml-bg);position:relative;z-index:6}
+.d .bar i{width:6px;height:6px;border-radius:50%;background:var(--ml-bar)}
+.d .bar .url{margin-left:8px;width:42%;height:6px;border-radius:3px;background:var(--ml-bar-2)}
+.d .pg{position:relative;flex:1;min-height:0;overflow:hidden}
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;container-type:size}
+.d .sc::-webkit-scrollbar{display:none}
+.d .r{height:6px;margin:8px 12px;border-radius:3px;background:var(--ml-bar-2)}
+.d .r.s{width:52%}
+.d .r.m{width:74%}
+.d .r.t{height:10px;width:58%;background:var(--ml-bar)}
+.d .im{position:relative;overflow:hidden;margin:10px 12px;height:64px;border-radius:10px;background:linear-gradient(180deg,var(--ml-accent-soft),var(--ml-bar-2))}
+.d .im::before{content:"";position:absolute;right:20%;top:18%;width:13px;height:13px;border-radius:50%;background:var(--ml-accent-line)}
+.d .im::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;background:var(--ml-bar);clip-path:polygon(0 100%,0 62%,24% 20%,46% 64%,64% 36%,100% 70%,100% 100%)}
+.d .lg{flex:none;width:11px;height:11px;border-radius:4px;background:var(--ml-grad)}
+.d button{appearance:none;border:0;background:none;cursor:pointer}
+`;
+const WIN = `<div class="win"><div class="bar"><i></i><i></i><i></i><span class="url"></span></div>`;
+const PAGE = (n) => Array.from({ length: n }, () => `<div class="im"></div><p class="r t"></p><p class="r"></p><p class="r m"></p>`).join('');
+const ARW = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg>`;
+
+ML.add({
+  id: 'footer-wordmark',
+  cat: 'footer',
+  title: 'Big wordmark',
+  sub: 'A huge brand word rises into view',
+  html: WIN + `<div class="pg"><div class="sc">${PAGE(3)}<footer class="ft"><div class="fl"><a>Product</a><a>Pricing</a><a>Docs</a><a>Contact</a></div><div class="wm"><span>Northwind</span></div></footer></div></div></div>`,
+  css: BASE + `
+.d .ft{display:flex;flex-direction:column;justify-content:space-between;height:62cqh;margin-top:6px;padding:14px 12px 0;background:var(--ml-surface);border-top:1px solid var(--ml-line)}
+.d .fl{display:flex;gap:14px;font-size:10px;color:var(--ml-ink-2)}
+.d .wm{height:17.6cqw;overflow:hidden}
+.d .wm span{display:block;font:700 17.4cqw/1 var(--ml-font);letter-spacing:-.06em;margin-left:-.02em;background:linear-gradient(180deg,var(--ml-accent) 0%,var(--ml-accent-2) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;transform:translateY(100%);will-change:transform}
+`,
+  run: (root) => {
+    const sc = root.querySelector('.sc');
+    const wm = root.querySelector('.wm span');
+    let uu = 0;
+    const yu = () => { uu = performance.now() + 2500; };
+    ['wheel', 'pointerdown', 'touchstart'].forEach((n) => sc.addEventListener(n, yu, { passive: true }));
+    const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+    const upd = () => {
+      const max = sc.scrollHeight - sc.clientHeight;
+      const q = Math.min(1, Math.max(0, (sc.scrollTop - (max - 110)) / 100));
+      const e = 1 - Math.pow(1 - q, 3);
+      wm.style.transform = 'translateY(' + ((1 - e) * 100).toFixed(2) + '%)';
+    };
+    sc.addEventListener('scroll', upd, { passive: true });
+    const period = 6800;
+    let start = performance.now();
+    const loop = (t) => {
+      if (!root.isConnected) return;
+      requestAnimationFrame(loop);
+      if (root.dataset.paused || t < uu) {
+        start = t - ((t - start) % period);
+        return;
+      }
+      const p = ((t - start) % period) / period;
+      const max = sc.scrollHeight - sc.clientHeight;
+      const k = p < 0.1 ? 0 : p < 0.55 ? ease((p - 0.1) / 0.45) : p < 0.78 ? 1 : p < 0.93 ? 1 - ease((p - 0.78) / 0.15) : 0;
+      sc.scrollTop = k * max;
+    };
+    upd();
+    requestAnimationFrame(loop);
+  },
+  prompt: `Build a footer that ends the page with a huge brand wordmark that rises into view. Make the footer a tall block with your link row at the top and, pinned to its bottom edge, a wrapper with overflow: hidden containing the brand word set in very large bold type (font-size: clamp(4rem, 19vw, 18rem), line-height 1, letter-spacing about -0.06em), filled with a vertical gradient of your accent color via background-clip: text. Start the word at transform: translateY(100%) so it is hidden under the wrapper's edge. Reveal it when the footer scrolls in: either an IntersectionObserver on the footer (threshold 0.35) that adds a class which transitions transform to none over about 900ms with cubic-bezier(.32,.72,0,1), or a scroll-linked version using animation-timeline: view() with animation-range: entry 20% entry 100%. Keep real text in the DOM (not an image) and mark it aria-hidden="true" if it just repeats the logo. Animate transform only. Under prefers-reduced-motion show the word in place. Plain HTML, CSS and a few lines of JS, no libraries.`,
+});
+
+ML.add({
+  id: 'footer-curtain',
+  cat: 'footer',
+  title: 'Curtain reveal',
+  sub: 'The page lifts off a fixed footer',
+  html: WIN + `<div class="pg"><footer class="ft"><div class="fi"><h5>Let's talk</h5><span class="mail">hello@northwind.co</span><div class="cols"><span>Product</span><span>Company</span><span>Legal</span></div></div></footer>
+<div class="sc"><div class="pgb">${PAGE(3)}</div><div class="gap"></div></div></div></div>`,
+  css: BASE + `
+.d .pg{background:var(--ml-grad)}
+.d .ft{position:absolute;left:0;right:0;bottom:0;height:56%;display:flex;align-items:flex-end;padding:0 14px 14px;color:#fff;background:linear-gradient(180deg,#FF4433,#0057D6)}
+.d .fi{width:100%;will-change:transform}
+.d .ft h5{font:600 22px/1.05 var(--ml-font);letter-spacing:-.04em;margin-bottom:6px}
+.d .mail{display:inline-block;font:500 10.5px/1 var(--ml-font);padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.2)}
+.d .cols{display:flex;gap:16px;margin-top:14px;font-size:9.5px;opacity:.82}
+.d .sc{z-index:2}
+.d .pgb{position:relative;padding-bottom:10px;background:var(--ml-bg);border-radius:0 0 14px 14px;box-shadow:0 12px 28px rgba(35,15,10,.22)}
+.d .gap{height:56cqh}
+`,
+  run: (root) => {
+    const sc = root.querySelector('.sc');
+    const fi = root.querySelector('.fi');
+    let uu = 0;
+    const yu = () => { uu = performance.now() + 2500; };
+    ['wheel', 'pointerdown', 'touchstart'].forEach((n) => sc.addEventListener(n, yu, { passive: true }));
+    const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+    const upd = () => {
+      const max = sc.scrollHeight - sc.clientHeight;
+      const q = Math.min(1, Math.max(0, sc.scrollTop / Math.max(1, max)));
+      fi.style.transform = 'translateY(' + ((1 - q) * 22).toFixed(1) + 'px)';
+    };
+    sc.addEventListener('scroll', upd, { passive: true });
+    const period = 6600;
+    let start = performance.now();
+    const loop = (t) => {
+      if (!root.isConnected) return;
+      requestAnimationFrame(loop);
+      if (root.dataset.paused || t < uu) {
+        start = t - ((t - start) % period);
+        return;
+      }
+      const p = ((t - start) % period) / period;
+      const max = sc.scrollHeight - sc.clientHeight;
+      const k = p < 0.1 ? 0 : p < 0.52 ? ease((p - 0.1) / 0.42) : p < 0.74 ? 1 : p < 0.92 ? 1 - ease((p - 0.74) / 0.18) : 0;
+      sc.scrollTop = k * max;
+    };
+    upd();
+    requestAnimationFrame(loop);
+  },
+  prompt: `Build a curtain-reveal footer: the page content lifts away like a curtain and exposes a footer that was waiting underneath. Put the footer at the bottom of the viewport with position: fixed; bottom: 0; left: 0; right: 0; z-index: 0 and a fixed height (about 55vh), with your accent color as its background. Wrap all the page content in a main element with position: relative; z-index: 1; a solid white background, a bottom radius of 24px and a soft shadow under its bottom edge, and give it margin-bottom equal to the footer height. Because the main block ends above the footer's height, scrolling to the bottom slides the page upward and the footer is revealed from behind it with no JavaScript. For extra depth, move the footer contents with a small parallax: translateY from 22px to 0 as the page reaches the end, using animation-timeline: scroll() or a throttled scroll listener. Keep the footer in normal reading order and make sure its links stay clickable once revealed (pointer-events only on the footer when the main block has moved). Fall back to a normal static footer under prefers-reduced-motion. Plain HTML and CSS, no libraries.`,
+});
+
+ML.add({
+  id: 'footer-links',
+  cat: 'footer',
+  title: 'Link arrow nudge',
+  sub: 'Hovered links reveal a leaning arrow',
+  html: `<footer class="fc"><div class="br"><i class="lg"></i><b>Northwind</b></div>
+<div class="g3"><div><h6>Product</h6><a><span>Features</span>${ARW}</a><a><span>Pricing</span>${ARW}</a><a><span>Changelog</span>${ARW}</a></div>
+<div><h6>Company</h6><a><span>About</span>${ARW}</a><a><span>Careers</span>${ARW}</a><a><span>Press</span>${ARW}</a></div>
+<div><h6>Resources</h6><a><span>Docs</span>${ARW}</a><a><span>Guides</span>${ARW}</a><a><span>Support</span>${ARW}</a></div></div>
+<div class="cp"><span>2026 Northwind</span><span>Privacy</span></div></footer>`,
+  css: `.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .fc{width:92%;padding:16px 16px 12px;border-radius:16px;background:var(--ml-bg);box-shadow:var(--ml-shadow)}
+.d .br{display:flex;align-items:center;gap:7px;margin-bottom:14px;font:600 12.5px/1 var(--ml-font);letter-spacing:-.02em}
+.d .lg{width:13px;height:13px;border-radius:5px;background:var(--ml-grad)}
+.d .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.d h6{margin-bottom:8px;font:500 8.5px/1 var(--ml-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ml-muted)}
+.d .g3 a{display:flex;align-items:center;gap:3px;padding:4px 0;font-size:11.5px;color:var(--ml-ink-2);cursor:pointer;transition:color .25s ease}
+.d .g3 a span{transition:transform var(--ml-spring-dur) var(--ml-spring)}
+.d .g3 a svg{flex:none;width:10px;height:10px;opacity:0;transform:translate(-5px,5px);transition:transform var(--ml-spring-dur) var(--ml-spring),opacity .2s ease}
+.d .g3 a:hover,.d .g3 a.is-auto{color:var(--ml-accent-ink)}
+.d .g3 a:hover span,.d .g3 a.is-auto span{transform:translateX(2px)}
+.d .g3 a:hover svg,.d .g3 a.is-auto svg{opacity:1;transform:none}
+.d .cp{display:flex;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid var(--ml-line);font-size:9.5px;color:var(--ml-muted)}
+`,
+  run: (root) => {
+    const links = [...root.querySelectorAll('.g3 a')];
+    let hover = false;
+    root.addEventListener('pointerenter', () => (hover = true));
+    root.addEventListener('pointerleave', () => (hover = false));
+    const order = [0, 4, 8, 1, 3, 7, 2, 5, 6];
+    let n = 0;
+    const tick = () => {
+      if (!root.isConnected) return;
+      links.forEach((a) => a.classList.remove('is-auto'));
+      if (!root.dataset.paused && !hover) {
+        links[order[n % order.length]].classList.add('is-auto');
+        n += 1;
+      }
+      setTimeout(tick, 800);
+    };
+    setTimeout(tick, 500);
+  },
+  prompt: `Add an arrow-nudge hover state to the link columns in my footer. Lay the footer out as a grid of columns, each with a small uppercase mono heading and a list of links. Make every link a flex row containing the label in a span and a small inline SVG arrow (arrow-up-right, 10px, stroke currentColor, 2.2 width, round caps) placed right after the text. At rest the arrow is invisible: opacity 0 and transform: translate(-5px, 5px). On :hover and :focus-visible the arrow goes to opacity 1 and transform none, the label shifts 2px to the right with transform: translateX(2px), and the text color moves from the muted ink to your accent color. Use a critically damped spring for the transforms: 587ms linear(0, 0.094 5.6%, 0.274 11.1%, 0.455 16.7%, 0.608 22.2%, 0.726 27.8%, 0.812 33.3%, 0.873 38.9%, 0.916 44.4%, 0.944 50%, 0.964 55.6%, 0.976 61.1%, 0.985 66.7%, 0.99 72.2%, 1 100%) and a 200ms ease for opacity. Add aria-hidden="true" to the arrow icons, keep keyboard focus styles identical to hover, and under prefers-reduced-motion change color only. Plain HTML and CSS, no libraries.`,
+});
+
+ML.add({
+  id: 'footer-newsletter',
+  cat: 'footer',
+  title: 'Newsletter signup',
+  sub: 'Field morphs into a confirmation',
+  html: `<form class="nl" novalidate><h5>Stay in the loop</h5><p>One short email a month. No spam.</p>
+<div class="row"><input class="em" type="email" placeholder="you@studio.co" aria-label="Email address" autocomplete="off"><button class="sb" type="submit">Subscribe</button>
+<div class="ok" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>You're in</span></div></div></form>`,
+  css: `.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d{grid-template-columns:minmax(0,1fr)}
+.d .nl{width:88%;justify-self:center;padding:20px 18px;border-radius:16px;background:var(--ml-bg);box-shadow:var(--ml-shadow)}
+.d h5{font:600 18px/1.1 var(--ml-font);letter-spacing:-.035em}
+.d p{margin:5px 0 14px;font-size:11.5px;color:var(--ml-muted)}
+.d .row{position:relative;display:flex;align-items:center;gap:6px;height:42px;padding:4px 4px 4px 14px;border-radius:999px;background:var(--ml-surface);box-shadow:inset 0 0 0 1px var(--ml-line);transition:box-shadow .25s ease}
+.d .row:focus-within{box-shadow:inset 0 0 0 1.5px var(--ml-accent)}
+.d .em{flex:1;min-width:0;border:0;outline:0;background:none;font-size:12px;color:var(--ml-ink)}
+.d .em::placeholder{color:var(--ml-muted)}
+.d .sb{flex:none;height:100%;padding:0 14px;border-radius:999px;background:var(--ml-accent);color:#fff;font-weight:600;font-size:11.5px;transition:transform var(--ml-spring-dur) var(--ml-spring)}
+.d .sb:active,.d .sb.press{transform:scale(.94);transition-duration:90ms}
+.d .ok{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:999px;background:var(--ml-grad);color:#fff;font-weight:600;font-size:12.5px;clip-path:circle(0% at 88% 50%);pointer-events:none;transition:clip-path 640ms var(--ml-ease)}
+.d .ok svg{width:15px;height:15px;stroke-dasharray:24;stroke-dashoffset:24}
+.d .row.done .ok{clip-path:circle(150% at 88% 50%);pointer-events:auto}
+.d .row.done .ok svg{stroke-dashoffset:0;transition:stroke-dashoffset 420ms ease .32s}
+`,
+  run: (root) => {
+    const form = root.querySelector('.nl');
+    const row = root.querySelector('.row');
+    const em = root.querySelector('.em');
+    const sb = root.querySelector('.sb');
+    let uu = 0;
+    const user = () => { uu = performance.now() + 5000; };
+    em.addEventListener('focus', user);
+    em.addEventListener('input', user);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      user();
+      if (em.value.trim().length < 3) return;
+      row.classList.add('done');
+      setTimeout(() => { row.classList.remove('done'); em.value = ''; }, 2600);
+    });
+    const text = 'maya@studio.co';
+    let i = 0;
+    let phase = 0;
+    const tick = () => {
+      if (!root.isConnected) return;
+      let d = 90;
+      if (root.dataset.paused || performance.now() < uu || row.classList.contains('done') && phase === 0) {
+        setTimeout(tick, 400);
+        return;
+      }
+      if (phase === 0) {
+        i += 1;
+        em.value = text.slice(0, i);
+        if (i >= text.length) { phase = 1; d = 600; }
+      } else if (phase === 1) {
+        sb.classList.add('press');
+        phase = 2;
+        d = 160;
+      } else if (phase === 2) {
+        sb.classList.remove('press');
+        row.classList.add('done');
+        phase = 3;
+        d = 2300;
+      } else {
+        row.classList.remove('done');
+        d = 700;
+        phase = 4;
+      }
+      if (phase === 4) { em.value = ''; i = 0; phase = 0; d = 900; }
+      setTimeout(tick, d);
+    };
+    setTimeout(tick, 900);
+  },
+  prompt: `Build a newsletter signup for a footer where the field itself turns into the confirmation. Render a pill-shaped row (height 42px, surface tint, 1px inset hairline, accent ring on :focus-within) containing an email input and a Subscribe button. Layer a confirmation element on top of the whole row: absolutely positioned inset 0, your accent gradient, white semibold text You're in with a check icon, and clip-path: circle(0% at 88% 50%) so it starts as nothing at the button's position. On a successful submit (preventDefault, validate the address, send the request) add a done class that animates clip-path to circle(150% at 88% 50%) over about 640ms with cubic-bezier(.32,.72,0,1), so the blue floods out of the button across the field, then draws the check with stroke-dasharray 24 and stroke-dashoffset 24 to 0 over 420ms after a 320ms delay. Give the button a 90ms scale(.94) press. Set aria-live="polite" on the confirmation, disable the input while sending, show an inline error for invalid input, and keep the success state (do not auto-reset on a real site). Under prefers-reduced-motion fade the confirmation in. Plain HTML, CSS and JS, no libraries.`,
+});
+
+ML.add({
+  id: 'footer-back-top',
+  cat: 'footer',
+  title: 'Back to top',
+  sub: 'A button glides the page back up',
+  html: WIN + `<div class="pg"><div class="sc">${PAGE(5)}</div>
+<button class="bt" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></div></div>`,
+  css: BASE + `
+.d .bt{position:absolute;right:11px;bottom:11px;z-index:3;width:34px;height:34px;display:grid;place-items:center;overflow:hidden;border-radius:50%;background:var(--ml-accent);color:#fff;box-shadow:0 1px 2px rgba(255,68,51,.3),0 8px 18px rgba(255,68,51,.28);opacity:0;transform:translateY(14px) scale(.6);pointer-events:none;transition:transform var(--ml-bounce-dur) var(--ml-bounce),opacity .2s ease}
+.d .bt.show{opacity:1;transform:none;pointer-events:auto}
+.d .bt.show.press{transform:scale(.9);transition-duration:90ms}
+.d .bt svg{width:15px;height:15px}
+.d .bt.go svg{animation:bt-up .6s var(--ml-ease) infinite}
+@keyframes bt-up{0%{transform:translateY(0)}45%{transform:translateY(-22px)}46%{transform:translateY(22px)}100%{transform:translateY(0)}}
+`,
+  run: (root) => {
+    const sc = root.querySelector('.sc');
+    const bt = root.querySelector('.bt');
+    let uu = 0;
+    let glide = null;
+    const yu = () => { uu = performance.now() + 2500; };
+    ['wheel', 'pointerdown', 'touchstart'].forEach((n) => sc.addEventListener(n, yu, { passive: true }));
+    const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+    bt.addEventListener('click', () => {
+      uu = performance.now() + 3500;
+      glide = { from: sc.scrollTop, t0: performance.now(), d: 1000 };
+    });
+    sc.addEventListener('scroll', () => bt.classList.toggle('show', sc.scrollTop > 40), { passive: true });
+    const period = 6600;
+    let start = performance.now();
+    const loop = (t) => {
+      if (!root.isConnected) return;
+      requestAnimationFrame(loop);
+      if (root.dataset.paused) { start = t - ((t - start) % period); return; }
+      if (glide) {
+        const k = Math.min(1, (t - glide.t0) / glide.d);
+        sc.scrollTop = glide.from * (1 - ease(k));
+        bt.classList.toggle('go', k < 1);
+        if (k >= 1) glide = null;
+        start = t - ((t - start) % period);
+        return;
+      }
+      if (t < uu) { start = t - ((t - start) % period); return; }
+      const p = ((t - start) % period) / period;
+      const max = sc.scrollHeight - sc.clientHeight;
+      let k = 0;
+      if (p < 0.08) k = 0;
+      else if (p < 0.5) k = ease((p - 0.08) / 0.42);
+      else if (p < 0.62) k = 1;
+      else if (p < 0.68) { k = 1; bt.classList.add('press'); }
+      else k = 1 - ease(Math.min(1, (p - 0.68) / 0.26));
+      if (p < 0.62 || p >= 0.68) bt.classList.remove('press');
+      bt.classList.toggle('go', p >= 0.68 && p < 0.94);
+      sc.scrollTop = k * max;
+    };
+    requestAnimationFrame(loop);
+  },
+  prompt: `Add a back-to-top button to the end of a long page. Make a 44px round button (your accent color, white arrow-up icon, soft colored shadow) with position: fixed; right: 20px; bottom: 20px. It starts hidden (opacity 0, transform: translateY(14px) scale(.6), pointer-events none) and appears with a slight-overshoot spring such as 594ms linear(0, 0.083 5.6%, 0.26 11.1%, 0.457 16.7%, 0.633 22.2%, 0.774 27.8%, 0.876 33.3%, 0.944 38.9%, 0.986 44.4%, 1.008 50%, 1.018 55.6%, 1.02 61.1%, 1.018 66.7%, 1.014 72.2%, 1 100%) once the visitor has scrolled past about one screen height (toggle it from an IntersectionObserver on a sentinel near the top, not a scroll handler). On click, glide the page to the top: window.scrollTo({ top: 0, behavior: 'smooth' }) is fine, or run a requestAnimationFrame loop with an ease-in-out cubic over about 1000ms if you want control over the duration. While it travels, loop the arrow upward: translateY from 0 to -22px, then re-enter from below at 22px, with the button clipping the icon (overflow: hidden). Add a 90ms scale(.9) press, a visible focus ring, and an aria-label. Move focus to the top of the page when it finishes. Under prefers-reduced-motion jump instantly. Plain HTML, CSS and JS, no libraries.`,
+});
+
+ML.add({
+  id: 'footer-social',
+  cat: 'footer',
+  title: 'Social icon lift',
+  sub: 'Icons rise and fill blue on hover',
+  html: `<div class="sf"><h5>Follow along</h5><p>Updates, releases and the odd behind-the-scenes.</p>
+<div class="ro"><a aria-label="Chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 20l1.1-4.9A8.4 8.4 0 0 1 3 11.5 8.5 8.5 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg></a>
+<a aria-label="Video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="4"/><path d="M10 9.5l5 2.5-5 2.5z"/></svg></a>
+<a aria-label="Photos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.5 6.5h.01"/></svg></a>
+<a aria-label="Feed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg></a>
+<a aria-label="Email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></a></div></div>`,
+  css: `.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .sf{width:90%;padding:22px 18px 24px;border-radius:16px;background:var(--ml-bg);box-shadow:var(--ml-shadow)}
+.d h5{font:600 18px/1.1 var(--ml-font);letter-spacing:-.035em}
+.d p{margin:5px 0 18px;font-size:11.5px;color:var(--ml-muted)}
+.d .ro{display:flex;gap:9px;padding-top:8px}
+.d .ro a{flex:1;max-width:44px;aspect-ratio:1;display:grid;place-items:center;border-radius:13px;background:var(--ml-surface);color:var(--ml-ink-2);box-shadow:inset 0 0 0 1px var(--ml-line);cursor:pointer;transition:transform var(--ml-spring-dur) var(--ml-spring),background-color .25s ease,color .25s ease,box-shadow var(--ml-spring-dur) var(--ml-spring)}
+.d .ro a svg{width:44%;height:44%}
+.d .ro a:hover,.d .ro a.is-auto{transform:translateY(-6px);background:var(--ml-accent);color:#fff;box-shadow:0 1px 2px rgba(255,68,51,.25),0 12px 20px rgba(255,68,51,.28)}
+.d .ro a:active{transform:translateY(-3px) scale(.94);transition-duration:90ms}
+`,
+  run: (root) => {
+    const links = [...root.querySelectorAll('.ro a')];
+    let hover = false;
+    root.addEventListener('pointerenter', () => (hover = true));
+    root.addEventListener('pointerleave', () => (hover = false));
+    let n = 0;
+    const tick = () => {
+      if (!root.isConnected) return;
+      links.forEach((a) => a.classList.remove('is-auto'));
+      if (!root.dataset.paused && !hover) {
+        if (n % 7 < links.length) links[n % 7].classList.add('is-auto');
+        n += 1;
+      }
+      setTimeout(tick, 520);
+    };
+    setTimeout(tick, 500);
+  },
+  prompt: `Build a row of social icon buttons for a footer. Each button is a square-ish link (44px, border-radius 13px, surface tint with a 1px inset hairline) containing a single inline SVG icon in a Lucide style (24 viewBox, stroke 2, round caps), sized to about 44% of the button. Use neutral generic shapes or your own brand marks. On :hover and :focus-visible lift the button with transform: translateY(-6px), fill it with your accent color, turn the icon white and add a colored two-layer shadow, all on a critically damped spring such as 587ms linear(0, 0.094 5.6%, 0.274 11.1%, 0.455 16.7%, 0.608 22.2%, 0.726 27.8%, 0.812 33.3%, 0.873 38.9%, 0.916 44.4%, 0.944 50%, 0.964 55.6%, 0.976 61.1%, 0.985 66.7%, 0.99 72.2%, 1 100%), with the background and color changing over 250ms. On :active press down to translateY(-3px) scale(.94) in 90ms. Give each link an aria-label naming the destination and rel="noopener" with target="_blank" for external profiles. Animate transform, shadow and color only. Under prefers-reduced-motion drop the lift and keep the color change. Plain HTML and CSS, no libraries.`,
+});
+
+ML.add({
+  id: 'footer-marquee-cta',
+  cat: 'footer',
+  title: 'Marquee CTA band',
+  sub: 'A big call to action scrolls forever',
+  html: WIN + `<div class="pg col"><div class="tp"><p class="r t"></p><p class="r m"></p></div>
+<a class="band"><div class="mq"><div class="seq"><span>Let's build something</span>${ARW}<span>Let's build something</span>${ARW}</div><div class="seq" aria-hidden="true"><span>Let's build something</span>${ARW}<span>Let's build something</span>${ARW}</div></div></a>
+<footer class="fb"><div class="fl"><a>Product</a><a>Pricing</a><a>Docs</a><a>Contact</a></div><span class="cp">2026 Northwind</span></footer></div></div>`,
+  css: BASE + `
+.d .pg.col{display:flex;flex-direction:column}
+.d .tp{flex:none;padding-top:6px}
+.d .tp .r{margin:7px 12px}
+.d .band{flex:none;display:block;overflow:hidden;padding:16px 0 15px;margin-top:6px;background:var(--ml-grad);color:#fff;cursor:pointer}
+.d .mq{display:flex;width:max-content;animation:mq 11s linear infinite}
+.d .seq{display:flex;align-items:center;flex:none;gap:18px;padding-right:18px;white-space:nowrap}
+.d .seq span{font:600 34px/1.15 var(--ml-font);letter-spacing:-.045em}
+.d .seq svg{flex:none;width:26px;height:26px;opacity:.9}
+.d .band:hover .mq{animation-play-state:paused}
+@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.d .fb{flex:1;display:flex;flex-direction:column;justify-content:center;gap:9px;padding:0 14px;background:var(--ml-surface)}
+.d .fl{display:flex;gap:16px;font:500 11px/1 var(--ml-font);color:var(--ml-ink-2)}
+.d .cp{font-size:10px;color:var(--ml-muted)}
+`,
+  prompt: `Build a call-to-action band that sits directly above the site footer and scrolls its message forever. Make the band a link (the whole thing is clickable) with your accent gradient, overflow: hidden, and inside it a flex track with width: max-content that holds two identical sequences (the second with aria-hidden="true"). Each sequence repeats the headline, for example Let's build something, in very large semibold type (clamp(2rem, 7vw, 6rem), tight negative tracking) with a small arrow-up-right icon between repeats. Animate the track with @keyframes translateX(0) to translateX(-50%), linear, infinite, about 20 to 40 seconds depending on width, so the loop is seamless. Keep the band to one large row with generous vertical padding (about 0.4em above and below) so it has room to breathe; an optional second outlined row (color: transparent; -webkit-text-stroke: 1px) only works when the band is tall enough to space the rows clearly. Pause the row on :hover and :focus-visible with animation-play-state: paused. Use only transform for the movement and will-change: transform. Under prefers-reduced-motion stop the animation and show one static line. Plain HTML and CSS, no libraries.`,
+});
+
+ML.add({
+  id: 'footer-status',
+  cat: 'footer',
+  title: 'Live status line',
+  sub: 'Pulsing dot, ticking clock, uptime bars',
+  html: `<div class="stc"><div class="tp"><span class="pd"></span><b>All systems normal</b><span class="sp"></span><time class="tm">00:00:00 UTC</time></div>
+<div class="up">${Array.from({ length: 30 }, (_, i) => `<i style="--i:${i}"></i>`).join('')}</div>
+<div class="bt"><span>99.98% uptime</span><span class="lat">Latency 118 ms</span></div></div>`,
+  css: `.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .stc{width:90%;padding:16px 16px 14px;border-radius:16px;background:var(--ml-bg);box-shadow:var(--ml-shadow)}
+.d .tp{display:flex;align-items:center;gap:9px;font-size:12px}
+.d .tp b{font-weight:600;letter-spacing:-.01em}
+.d .sp{flex:1}
+.d .tm{font:500 10px/1 var(--ml-mono);color:var(--ml-muted);font-variant-numeric:tabular-nums}
+.d .pd{position:relative;flex:none;width:8px;height:8px;border-radius:50%;background:#1DB954}
+.d .pd::after{content:"";position:absolute;inset:0;border-radius:50%;background:#1DB954;animation:pulse 1.9s var(--ml-ease) infinite}
+@keyframes pulse{0%{transform:scale(1);opacity:.55}70%,100%{transform:scale(3.1);opacity:0}}
+.d .up{display:flex;gap:3px;height:30px;margin:15px 0 10px;align-items:stretch}
+.d .up i{flex:1;border-radius:2px;background:#1DB954;opacity:.35;animation:ub 2.4s ease-in-out infinite;animation-delay:calc(var(--i) * 70ms)}
+.d .up i:nth-child(11){background:#F5B83D}
+@keyframes ub{0%,100%{opacity:.35}35%{opacity:1}}
+.d .bt{display:flex;justify-content:space-between;font-size:10px;color:var(--ml-muted)}
+.d .lat{font-variant-numeric:tabular-nums}
+`,
+  run: (root) => {
+    const tm = root.querySelector('.tm');
+    const lat = root.querySelector('.lat');
+    const tick = () => {
+      if (!root.isConnected) return;
+      if (!root.dataset.paused) {
+        tm.textContent = new Date().toISOString().slice(11, 19) + ' UTC';
+        lat.textContent = 'Latency ' + (108 + Math.round(Math.random() * 26)) + ' ms';
+      }
+      setTimeout(tick, 1000);
+    };
+    tick();
+  },
+  prompt: `Build a status line for the bottom of a footer. In one row show a pulsing green dot, the text All systems normal in semibold, and on the right a live clock in a tabular-number mono font (time in UTC, updated once a second with setTimeout aligned to the next second, and stopped when the tab is hidden). The dot is 8px with a ::after ring of the same color animated with @keyframes pulse: transform scale(1) to scale(3.1) while opacity goes 0.55 to 0 over 1.9s, ease-out, infinite. Below the row draw a strip of 30 thin uptime bars (flex, gap 3px, height 30px, radius 2px) in green with one amber bar for a past incident, and run a soft wave through them: opacity 0.35 to 1 with animation-delay of index * 70ms. Under the strip show an uptime percentage and a latency number on opposite sides. Use semantic green and amber only for status, and fill the data from your status API. Give the strip role="img" with an aria-label summarising the last 30 days, and wrap the text in role="status". Animate transform and opacity only. Under prefers-reduced-motion stop the pulse and the wave. Plain HTML, CSS and a few lines of JS, no libraries.`,
+});
+
+})();

@@ -1,0 +1,446 @@
+(() => {
+// Page transitions. A mini window switching between two abstract pages on a 6s loop.
+
+ML.add({
+  id: 'transitions-fade-through',
+  cat: 'transitions',
+  title: 'Fade through',
+  sub: 'Old page fades out, new scales in',
+  html: `<div class="win"><div class="bar"><i></i><i></i><i></i><span class="url"></span></div><div class="vp"><div class="pg a"><div class="nv"><b></b><span class="lb">Home</span><em></em></div><div class="hr"><u></u></div><p class="r m"></p><p class="r s"></p><div class="tr"><i></i><i></i><i></i></div></div><div class="pg b"><span class="lb">Plans</span><div class="hd"><u></u></div><p class="t"></p><p class="r"></p><p class="r s"></p><div class="cd"><i></i><i></i></div></div></div></div>`,
+  css: `
+.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .win{position:relative;width:84%;height:84%;display:flex;flex-direction:column;background:var(--ml-bg);border-radius:12px;box-shadow:var(--ml-shadow);overflow:hidden}
+.d .bar{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid var(--ml-line)}
+.d .bar i{width:6px;height:6px;border-radius:50%;background:var(--ml-bar)}
+.d .bar .url{margin-left:8px;width:42%;height:6px;border-radius:3px;background:var(--ml-bar-2)}
+.d .vp{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--ml-surface)}
+.d .pg{position:absolute;inset:0;display:flex;flex-direction:column;gap:7px;padding:10px 12px;background:var(--ml-bg)}
+.d .pg .lb{font:600 9px/1 var(--ml-mono);color:var(--ml-muted);letter-spacing:.05em;text-transform:uppercase}
+.d .nv{display:flex;align-items:center;gap:6px}
+.d .nv b{width:9px;height:9px;border-radius:3px;background:var(--ml-bar)}
+.d .nv em{margin-left:auto;width:22%;height:5px;border-radius:3px;background:var(--ml-bar-2)}
+.d .hr{position:relative;flex:1;min-height:0;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,var(--ml-accent-soft),var(--ml-bar-2))}
+.d .hr u{position:absolute;right:20%;top:18%;width:13px;height:13px;border-radius:50%;background:var(--ml-accent-line)}
+.d .hr::after{content:"";position:absolute;left:0;right:0;bottom:0;height:48%;background:var(--ml-bar);clip-path:polygon(0 100%,0 60%,22% 20%,44% 62%,62% 34%,100% 70%,100% 100%)}
+.d .pg .r{flex:none;height:6px;margin:0;border-radius:3px;background:var(--ml-bar-2)}
+.d .pg .r.s{width:55%}
+.d .pg .r.m{width:76%}
+.d .tr{flex:none;display:flex;gap:6px;height:22%}
+.d .tr i{flex:1;border-radius:7px;background:var(--ml-bar-2)}
+.d .hd{position:relative;flex:none;height:40%;border-radius:9px;overflow:hidden;background:var(--ml-grad)}
+.d .hd u{position:absolute;left:18%;top:20%;width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.85)}
+.d .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;background:rgba(255,255,255,.28);clip-path:polygon(0 100%,0 66%,26% 24%,48% 62%,70% 30%,100% 68%,100% 100%)}
+.d .pg .t{flex:none;height:9px;width:46%;border-radius:4px;background:var(--ml-bar)}
+.d .cd{flex:1;min-height:0;display:flex;gap:6px}
+.d .cd i{flex:1;border-radius:8px;background:var(--ml-surface);border:1px solid var(--ml-line)}
+
+.d .a{animation:fa 6s infinite var(--ml-ease)}
+.d .b{animation:fb 6s infinite var(--ml-ease)}
+@keyframes fa{0%,28%{opacity:1;transform:none}38%,86%{opacity:0;transform:scale(.97)}96%,100%{opacity:1;transform:none}}
+@keyframes fb{0%,36%{opacity:0;transform:scale(1.04)}50%,78%{opacity:1;transform:none}88%,100%{opacity:0;transform:scale(1.04)}}
+`,
+  prompt: `Build a fade-through page transition (the Material pattern for moving between unrelated views). The outgoing page fades out first: opacity 1 to 0 and transform scale(1) to scale(0.97) over about 150ms ease-in. Only after it is gone does the incoming page start: opacity 0 to 1 and scale(1.04) to scale(1) over about 300ms with a decelerating curve (cubic-bezier(0.32, 0.72, 0, 1)). Because the two never overlap, there is a brief neutral gap that makes the change feel deliberate. In a multi-page site use the View Transitions API: add @view-transition { navigation: auto } and style ::view-transition-old(root) and ::view-transition-new(root) with those keyframes and a 150ms delay on the new one. For a single-page app, wrap the route change in document.startViewTransition(() => render(next)). Animate only opacity and transform, keep focus management (move focus to the new page heading), and under prefers-reduced-motion: reduce use a plain 100ms cross-fade. No libraries.`,
+});
+
+ML.add({
+  id: 'transitions-slide-push',
+  cat: 'transitions',
+  title: 'Slide push',
+  sub: 'New page pushes the old one sideways',
+  html: `<div class="win"><div class="bar"><i></i><i></i><i></i><span class="url"></span></div><div class="vp"><div class="pg a"><div class="nv"><b></b><span class="lb">Home</span><em></em></div><div class="hr"><u></u></div><p class="r m"></p><p class="r s"></p><div class="tr"><i></i><i></i><i></i></div></div><div class="pg b"><span class="lb">Plans</span><div class="hd"><u></u></div><p class="t"></p><p class="r"></p><p class="r s"></p><div class="cd"><i></i><i></i></div></div></div></div>`,
+  css: `
+.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .win{position:relative;width:84%;height:84%;display:flex;flex-direction:column;background:var(--ml-bg);border-radius:12px;box-shadow:var(--ml-shadow);overflow:hidden}
+.d .bar{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid var(--ml-line)}
+.d .bar i{width:6px;height:6px;border-radius:50%;background:var(--ml-bar)}
+.d .bar .url{margin-left:8px;width:42%;height:6px;border-radius:3px;background:var(--ml-bar-2)}
+.d .vp{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--ml-surface)}
+.d .pg{position:absolute;inset:0;display:flex;flex-direction:column;gap:7px;padding:10px 12px;background:var(--ml-bg)}
+.d .pg .lb{font:600 9px/1 var(--ml-mono);color:var(--ml-muted);letter-spacing:.05em;text-transform:uppercase}
+.d .nv{display:flex;align-items:center;gap:6px}
+.d .nv b{width:9px;height:9px;border-radius:3px;background:var(--ml-bar)}
+.d .nv em{margin-left:auto;width:22%;height:5px;border-radius:3px;background:var(--ml-bar-2)}
+.d .hr{position:relative;flex:1;min-height:0;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,var(--ml-accent-soft),var(--ml-bar-2))}
+.d .hr u{position:absolute;right:20%;top:18%;width:13px;height:13px;border-radius:50%;background:var(--ml-accent-line)}
+.d .hr::after{content:"";position:absolute;left:0;right:0;bottom:0;height:48%;background:var(--ml-bar);clip-path:polygon(0 100%,0 60%,22% 20%,44% 62%,62% 34%,100% 70%,100% 100%)}
+.d .pg .r{flex:none;height:6px;margin:0;border-radius:3px;background:var(--ml-bar-2)}
+.d .pg .r.s{width:55%}
+.d .pg .r.m{width:76%}
+.d .tr{flex:none;display:flex;gap:6px;height:22%}
+.d .tr i{flex:1;border-radius:7px;background:var(--ml-bar-2)}
+.d .hd{position:relative;flex:none;height:40%;border-radius:9px;overflow:hidden;background:var(--ml-grad)}
+.d .hd u{position:absolute;left:18%;top:20%;width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.85)}
+.d .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;background:rgba(255,255,255,.28);clip-path:polygon(0 100%,0 66%,26% 24%,48% 62%,70% 30%,100% 68%,100% 100%)}
+.d .pg .t{flex:none;height:9px;width:46%;border-radius:4px;background:var(--ml-bar)}
+.d .cd{flex:1;min-height:0;display:flex;gap:6px}
+.d .cd i{flex:1;border-radius:8px;background:var(--ml-surface);border:1px solid var(--ml-line)}
+
+.d .a{animation:pa 6s infinite var(--ml-ease)}
+.d .b{animation:pb 6s infinite var(--ml-ease)}
+@keyframes pa{0%,30%{transform:none}44%,80%{transform:translateX(-100%)}94%,100%{transform:none}}
+@keyframes pb{0%,30%{transform:translateX(100%)}44%,80%{transform:none}94%,100%{transform:translateX(100%)}}
+`,
+  prompt: `Build a slide-push page transition. Both pages sit in a viewport wrapper with overflow: hidden. When navigating forward the incoming page starts at translateX(100%) and the outgoing page moves to translateX(-100%) at the same time, so the new page visibly pushes the old one out; going back reverses the direction. Duration 450ms with cubic-bezier(0.32, 0.72, 0, 1) (fast start, long soft settle). Give the incoming page a soft shadow on its leading edge (box-shadow: -10px 0 24px rgba(35,15,10, 0.08)) so it reads as a layer. With the View Transitions API set a direction class on the root before starting the transition and animate ::view-transition-old(root) and ::view-transition-new(root) with translate keyframes; without it, toggle classes on two absolutely positioned page elements. Animate only transform, keep both pages in the DOM until the animation ends, make the outgoing page inert so it cannot take focus, and under prefers-reduced-motion: reduce swap with a short fade. No libraries.`,
+});
+
+ML.add({
+  id: 'transitions-shared-element',
+  cat: 'transitions',
+  title: 'Shared element',
+  sub: 'A thumbnail grows into the header',
+  html: `<div class="win"><div class="bar"><i></i><i></i><i></i><span class="url"></span></div><div class="vp">
+<div class="pg a"><div class="nv"><b></b><span class="lb">Gallery</span><em></em></div><i class="n n1"></i><i class="n n3"></i></div>
+<div class="pg b"><i class="sp"></i><p class="t"></p><p class="r"></p><p class="r s"></p><div class="cd"><i></i><i></i></div></div>
+<div class="sh"></div>
+</div></div>`,
+  css: `
+.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .win{position:relative;width:84%;height:84%;display:flex;flex-direction:column;background:var(--ml-bg);border-radius:12px;box-shadow:var(--ml-shadow);overflow:hidden}
+.d .bar{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid var(--ml-line)}
+.d .bar i{width:6px;height:6px;border-radius:50%;background:var(--ml-bar)}
+.d .bar .url{margin-left:8px;width:42%;height:6px;border-radius:3px;background:var(--ml-bar-2)}
+.d .vp{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--ml-surface)}
+.d .pg{position:absolute;inset:0;display:flex;flex-direction:column;gap:7px;padding:10px 12px;background:var(--ml-bg)}
+.d .pg .lb{font:600 9px/1 var(--ml-mono);color:var(--ml-muted);letter-spacing:.05em;text-transform:uppercase}
+.d .nv{display:flex;align-items:center;gap:6px}
+.d .nv b{width:9px;height:9px;border-radius:3px;background:var(--ml-bar)}
+.d .nv em{margin-left:auto;width:22%;height:5px;border-radius:3px;background:var(--ml-bar-2)}
+.d .hr{position:relative;flex:1;min-height:0;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,var(--ml-accent-soft),var(--ml-bar-2))}
+.d .hr u{position:absolute;right:20%;top:18%;width:13px;height:13px;border-radius:50%;background:var(--ml-accent-line)}
+.d .hr::after{content:"";position:absolute;left:0;right:0;bottom:0;height:48%;background:var(--ml-bar);clip-path:polygon(0 100%,0 60%,22% 20%,44% 62%,62% 34%,100% 70%,100% 100%)}
+.d .pg .r{flex:none;height:6px;margin:0;border-radius:3px;background:var(--ml-bar-2)}
+.d .pg .r.s{width:55%}
+.d .pg .r.m{width:76%}
+.d .tr{flex:none;display:flex;gap:6px;height:22%}
+.d .tr i{flex:1;border-radius:7px;background:var(--ml-bar-2)}
+.d .hd{position:relative;flex:none;height:40%;border-radius:9px;overflow:hidden;background:var(--ml-grad)}
+.d .hd u{position:absolute;left:18%;top:20%;width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.85)}
+.d .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;background:rgba(255,255,255,.28);clip-path:polygon(0 100%,0 66%,26% 24%,48% 62%,70% 30%,100% 68%,100% 100%)}
+.d .pg .t{flex:none;height:9px;width:46%;border-radius:4px;background:var(--ml-bar)}
+.d .cd{flex:1;min-height:0;display:flex;gap:6px}
+.d .cd i{flex:1;border-radius:8px;background:var(--ml-surface);border:1px solid var(--ml-line)}
+
+.d .pg.a .n{position:absolute;top:32%;height:34%;width:28%;border-radius:8px;background:var(--ml-bar-2)}
+.d .pg.a .n1{left:6%}
+.d .pg.a .n3{left:66%}
+.d .pg.b .sp{flex:none;height:44%}
+.d .pg.b .cd{margin-top:2px}
+.d .a{animation:ga 6s infinite var(--ml-ease)}
+.d .b{animation:gb 6s infinite var(--ml-ease)}
+.d .sh{position:absolute;inset:0;z-index:3;background:linear-gradient(135deg,var(--ml-accent-2),var(--ml-accent));animation:gs 6s infinite var(--ml-ease)}
+@keyframes ga{0%,24%{opacity:1}34%,80%{opacity:0}92%,100%{opacity:1}}
+@keyframes gb{0%,30%{opacity:0;transform:translateY(8px)}42%,74%{opacity:1;transform:none}84%,100%{opacity:0;transform:translateY(8px)}}
+@keyframes gs{0%,24%{clip-path:inset(32% 36% 34% 36% round 8px)}40%,76%{clip-path:inset(5% 5% 51% 5% round 10px)}92%,100%{clip-path:inset(32% 36% 34% 36% round 8px)}}
+`,
+  prompt: `Build a shared-element transition where a thumbnail in a list grows into the hero of the detail page. The simplest robust way is the View Transitions API: give the thumbnail and the detail hero the same view-transition-name (it must be unique per element, so set it inline on the clicked item, for example style='view-transition-name: hero-42'), then call document.startViewTransition(() => showDetail(id)). The browser snapshots both states and morphs position, size and clip between them; tune it with ::view-transition-group(hero-42) { animation-duration: 500ms; animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1) }. Fade the rest of the old page out and the new page's text in underneath (opacity plus translateY(8px)). Remove the view-transition-name from other items so only one pair morphs. Fallback without the API: measure both rectangles with getBoundingClientRect (FLIP), apply the inverse transform to the detail hero, then release it to transform: none. Respect prefers-reduced-motion: reduce with an instant swap. No libraries.`,
+});
+
+ML.add({
+  id: 'transitions-curtain',
+  cat: 'transitions',
+  title: 'Curtain wipe',
+  sub: 'A blue panel wipes across the page',
+  html: `<div class="win"><div class="bar"><i></i><i></i><i></i><span class="url"></span></div><div class="vp"><div class="pg a"><div class="nv"><b></b><span class="lb">Home</span><em></em></div><div class="hr"><u></u></div><p class="r m"></p><p class="r s"></p><div class="tr"><i></i><i></i><i></i></div></div><div class="pg b"><span class="lb">Plans</span><div class="hd"><u></u></div><p class="t"></p><p class="r"></p><p class="r s"></p><div class="cd"><i></i><i></i></div></div><div class="cur"></div></div></div>`,
+  css: `
+.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .win{position:relative;width:84%;height:84%;display:flex;flex-direction:column;background:var(--ml-bg);border-radius:12px;box-shadow:var(--ml-shadow);overflow:hidden}
+.d .bar{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid var(--ml-line)}
+.d .bar i{width:6px;height:6px;border-radius:50%;background:var(--ml-bar)}
+.d .bar .url{margin-left:8px;width:42%;height:6px;border-radius:3px;background:var(--ml-bar-2)}
+.d .vp{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--ml-surface)}
+.d .pg{position:absolute;inset:0;display:flex;flex-direction:column;gap:7px;padding:10px 12px;background:var(--ml-bg)}
+.d .pg .lb{font:600 9px/1 var(--ml-mono);color:var(--ml-muted);letter-spacing:.05em;text-transform:uppercase}
+.d .nv{display:flex;align-items:center;gap:6px}
+.d .nv b{width:9px;height:9px;border-radius:3px;background:var(--ml-bar)}
+.d .nv em{margin-left:auto;width:22%;height:5px;border-radius:3px;background:var(--ml-bar-2)}
+.d .hr{position:relative;flex:1;min-height:0;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,var(--ml-accent-soft),var(--ml-bar-2))}
+.d .hr u{position:absolute;right:20%;top:18%;width:13px;height:13px;border-radius:50%;background:var(--ml-accent-line)}
+.d .hr::after{content:"";position:absolute;left:0;right:0;bottom:0;height:48%;background:var(--ml-bar);clip-path:polygon(0 100%,0 60%,22% 20%,44% 62%,62% 34%,100% 70%,100% 100%)}
+.d .pg .r{flex:none;height:6px;margin:0;border-radius:3px;background:var(--ml-bar-2)}
+.d .pg .r.s{width:55%}
+.d .pg .r.m{width:76%}
+.d .tr{flex:none;display:flex;gap:6px;height:22%}
+.d .tr i{flex:1;border-radius:7px;background:var(--ml-bar-2)}
+.d .hd{position:relative;flex:none;height:40%;border-radius:9px;overflow:hidden;background:var(--ml-grad)}
+.d .hd u{position:absolute;left:18%;top:20%;width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.85)}
+.d .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;background:rgba(255,255,255,.28);clip-path:polygon(0 100%,0 66%,26% 24%,48% 62%,70% 30%,100% 68%,100% 100%)}
+.d .pg .t{flex:none;height:9px;width:46%;border-radius:4px;background:var(--ml-bar)}
+.d .cd{flex:1;min-height:0;display:flex;gap:6px}
+.d .cd i{flex:1;border-radius:8px;background:var(--ml-surface);border:1px solid var(--ml-line)}
+
+.d .cur{position:absolute;inset:0;z-index:3;background:var(--ml-grad);transform:translateX(-101%);animation:cw 6s infinite var(--ml-ease)}
+.d .cur::after{content:"";position:absolute;left:50%;top:50%;width:28px;height:6px;margin:-3px 0 0 -14px;border-radius:3px;background:rgba(255,255,255,.8)}
+.d .a{animation:ca 6s infinite linear}
+.d .b{animation:cb 6s infinite linear}
+@keyframes cw{0%,24%{transform:translateX(-101%)}38%{transform:none}50%{transform:translateX(101%)}50.1%,64%{transform:translateX(-101%)}78%{transform:none}90%,100%{transform:translateX(101%)}}
+@keyframes ca{0%,37.9%{opacity:1}38%,77.9%{opacity:0}78%,100%{opacity:1}}
+@keyframes cb{0%,37.9%{opacity:0}38%,77.9%{opacity:1}78%,100%{opacity:0}}
+`,
+  prompt: `Build a curtain-wipe page transition. A full-screen panel in your accent color (a gradient from your accent to a lighter tint) sits above the app with transform: translateX(-101%). On navigation, slide it in to translateX(0) over about 450ms with cubic-bezier(0.32, 0.72, 0, 1) so it covers the old page, swap the route content while the screen is fully covered (on transitionend or a matching timeout, never earlier), then slide it out to translateX(101%) over 450ms to reveal the new page. Optionally fade a small logo mark in the middle while covered. With the View Transitions API you can instead animate ::view-transition-new(root) with a clip-path: inset(0 100% 0 0) to inset(0) keyframe. Animate only transform or clip-path, set pointer-events: none on the panel when idle and block clicks while it is moving, announce the new page title to screen readers via an aria-live region, and under prefers-reduced-motion: reduce replace the wipe with a quick fade. No libraries.`,
+});
+
+ML.add({
+  id: 'transitions-circle',
+  cat: 'transitions',
+  title: 'Circle reveal',
+  sub: 'Next page expands from the tap point',
+  html: `<div class="win"><div class="bar"><i></i><i></i><i></i><span class="url"></span></div><div class="vp"><div class="pg a"><div class="nv"><b></b><span class="lb">Home</span><em></em></div><div class="hr"><u></u></div><p class="r m"></p><p class="r s"></p><div class="tr"><i></i><i></i><i></i></div></div><div class="pg b"><span class="lb">Plans</span><div class="hd"><u></u></div><p class="t"></p><p class="r"></p><p class="r s"></p><div class="cd"><i></i><i></i></div></div><i class="tap"></i></div></div>`,
+  css: `
+.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .win{position:relative;width:84%;height:84%;display:flex;flex-direction:column;background:var(--ml-bg);border-radius:12px;box-shadow:var(--ml-shadow);overflow:hidden}
+.d .bar{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid var(--ml-line)}
+.d .bar i{width:6px;height:6px;border-radius:50%;background:var(--ml-bar)}
+.d .bar .url{margin-left:8px;width:42%;height:6px;border-radius:3px;background:var(--ml-bar-2)}
+.d .vp{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--ml-surface)}
+.d .pg{position:absolute;inset:0;display:flex;flex-direction:column;gap:7px;padding:10px 12px;background:var(--ml-bg)}
+.d .pg .lb{font:600 9px/1 var(--ml-mono);color:var(--ml-muted);letter-spacing:.05em;text-transform:uppercase}
+.d .nv{display:flex;align-items:center;gap:6px}
+.d .nv b{width:9px;height:9px;border-radius:3px;background:var(--ml-bar)}
+.d .nv em{margin-left:auto;width:22%;height:5px;border-radius:3px;background:var(--ml-bar-2)}
+.d .hr{position:relative;flex:1;min-height:0;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,var(--ml-accent-soft),var(--ml-bar-2))}
+.d .hr u{position:absolute;right:20%;top:18%;width:13px;height:13px;border-radius:50%;background:var(--ml-accent-line)}
+.d .hr::after{content:"";position:absolute;left:0;right:0;bottom:0;height:48%;background:var(--ml-bar);clip-path:polygon(0 100%,0 60%,22% 20%,44% 62%,62% 34%,100% 70%,100% 100%)}
+.d .pg .r{flex:none;height:6px;margin:0;border-radius:3px;background:var(--ml-bar-2)}
+.d .pg .r.s{width:55%}
+.d .pg .r.m{width:76%}
+.d .tr{flex:none;display:flex;gap:6px;height:22%}
+.d .tr i{flex:1;border-radius:7px;background:var(--ml-bar-2)}
+.d .hd{position:relative;flex:none;height:40%;border-radius:9px;overflow:hidden;background:var(--ml-grad)}
+.d .hd u{position:absolute;left:18%;top:20%;width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.85)}
+.d .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;background:rgba(255,255,255,.28);clip-path:polygon(0 100%,0 66%,26% 24%,48% 62%,70% 30%,100% 68%,100% 100%)}
+.d .pg .t{flex:none;height:9px;width:46%;border-radius:4px;background:var(--ml-bar)}
+.d .cd{flex:1;min-height:0;display:flex;gap:6px}
+.d .cd i{flex:1;border-radius:8px;background:var(--ml-surface);border:1px solid var(--ml-line)}
+
+.d .b{clip-path:circle(0% at 72% 68%);animation:cb 6s infinite var(--ml-ease)}
+.d .tap{position:absolute;z-index:4;left:72%;top:68%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;border:2px solid var(--ml-accent);background:var(--ml-accent-soft);opacity:0;animation:ct 6s infinite ease-out}
+@keyframes cb{0%,20%{clip-path:circle(0% at 72% 68%)}44%,66%{clip-path:circle(150% at 72% 68%)}90%,100%{clip-path:circle(0% at 72% 68%)}}
+@keyframes ct{0%,14%{opacity:0;transform:scale(.4)}18%{opacity:1;transform:scale(.8)}30%{opacity:0;transform:scale(2.4)}58%{opacity:0;transform:scale(.4)}62%{opacity:1;transform:scale(.8)}74%{opacity:0;transform:scale(2.4)}100%{opacity:0}}
+`,
+  prompt: `Build a circle-reveal page transition that expands from the exact point the user tapped. On click, read the pointer coordinates (event.clientX and clientY relative to the viewport) and store them as CSS variables --x and --y. The incoming page sits on top with clip-path: circle(0% at var(--x) var(--y)) and animates to circle(150% at var(--x) var(--y)) over about 600ms with cubic-bezier(0.32, 0.72, 0, 1); 150% of the reference radius is enough to cover the farthest corner of any screen. The View Transitions API does this natively: call document.startViewTransition(), then after transition.ready animate document.documentElement with { clipPath: ['circle(0% at X Y)', 'circle(150% at X Y)'] }, duration 600, easing 'cubic-bezier(0.32, 0.72, 0, 1)', pseudoElement: '::view-transition-new(root)', and set ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal }. Use the center of the trigger when activated by keyboard. Under prefers-reduced-motion: reduce swap instantly. No libraries.`,
+});
+
+ML.add({
+  id: 'transitions-stagger',
+  cat: 'transitions',
+  title: 'Stagger out and in',
+  sub: 'Blocks leave and arrive in sequence',
+  html: `<div class="win"><div class="bar"><i></i><i></i><i></i><span class="url"></span></div><div class="vp">
+<div class="pg a"><div class="nv" style="--i:0"><b></b><span class="lb">Home</span><em></em></div><div class="hr" style="--i:1"><u></u></div><p class="r m" style="--i:2"></p><p class="r s" style="--i:3"></p><div class="tr" style="--i:4"><i></i><i></i><i></i></div></div>
+<div class="pg b"><span class="lb" style="--i:0">Plans</span><div class="hd" style="--i:1"><u></u></div><p class="t" style="--i:2"></p><p class="r" style="--i:3"></p><div class="cd" style="--i:4"><i></i><i></i></div></div>
+</div></div>`,
+  css: `
+.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .win{position:relative;width:84%;height:84%;display:flex;flex-direction:column;background:var(--ml-bg);border-radius:12px;box-shadow:var(--ml-shadow);overflow:hidden}
+.d .bar{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid var(--ml-line)}
+.d .bar i{width:6px;height:6px;border-radius:50%;background:var(--ml-bar)}
+.d .bar .url{margin-left:8px;width:42%;height:6px;border-radius:3px;background:var(--ml-bar-2)}
+.d .vp{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--ml-surface)}
+.d .pg{position:absolute;inset:0;display:flex;flex-direction:column;gap:7px;padding:10px 12px;background:var(--ml-bg)}
+.d .pg .lb{font:600 9px/1 var(--ml-mono);color:var(--ml-muted);letter-spacing:.05em;text-transform:uppercase}
+.d .nv{display:flex;align-items:center;gap:6px}
+.d .nv b{width:9px;height:9px;border-radius:3px;background:var(--ml-bar)}
+.d .nv em{margin-left:auto;width:22%;height:5px;border-radius:3px;background:var(--ml-bar-2)}
+.d .hr{position:relative;flex:1;min-height:0;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,var(--ml-accent-soft),var(--ml-bar-2))}
+.d .hr u{position:absolute;right:20%;top:18%;width:13px;height:13px;border-radius:50%;background:var(--ml-accent-line)}
+.d .hr::after{content:"";position:absolute;left:0;right:0;bottom:0;height:48%;background:var(--ml-bar);clip-path:polygon(0 100%,0 60%,22% 20%,44% 62%,62% 34%,100% 70%,100% 100%)}
+.d .pg .r{flex:none;height:6px;margin:0;border-radius:3px;background:var(--ml-bar-2)}
+.d .pg .r.s{width:55%}
+.d .pg .r.m{width:76%}
+.d .tr{flex:none;display:flex;gap:6px;height:22%}
+.d .tr i{flex:1;border-radius:7px;background:var(--ml-bar-2)}
+.d .hd{position:relative;flex:none;height:40%;border-radius:9px;overflow:hidden;background:var(--ml-grad)}
+.d .hd u{position:absolute;left:18%;top:20%;width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.85)}
+.d .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;background:rgba(255,255,255,.28);clip-path:polygon(0 100%,0 66%,26% 24%,48% 62%,70% 30%,100% 68%,100% 100%)}
+.d .pg .t{flex:none;height:9px;width:46%;border-radius:4px;background:var(--ml-bar)}
+.d .cd{flex:1;min-height:0;display:flex;gap:6px}
+.d .cd i{flex:1;border-radius:8px;background:var(--ml-surface);border:1px solid var(--ml-line)}
+
+.d .vp{background:var(--ml-bg)}
+.d .pg{background:transparent}
+.d .a > *{animation:so 6s infinite var(--ml-ease);animation-delay:calc(var(--i) * 70ms)}
+.d .b > *{animation:si 6s infinite var(--ml-ease);animation-delay:calc(var(--i) * 70ms)}
+@keyframes so{0%,24%{opacity:1;transform:none}32%,80%{opacity:0;transform:translateY(10px) scale(.94)}90%,100%{opacity:1;transform:none}}
+@keyframes si{0%,38%{opacity:0;transform:translateY(10px) scale(.94)}48%,66%{opacity:1;transform:none}74%,100%{opacity:0;transform:translateY(10px) scale(.94)}}
+`,
+  prompt: `Build a staggered page transition where the blocks of the old page leave one after another and the blocks of the new page arrive in sequence. Mark each top-level block with a --i index (style='--i: 2'). Leave: opacity 1 to 0 and transform translateY(10px) scale(0.94) over about 250ms ease-in, with animation-delay: calc(var(--i) * 70ms). Wait until the last block has gone (about 250ms + blocks * 70ms), swap the route content, then arrive: the reverse, from opacity 0, translateY(10px) scale(0.94) to rest, 450ms with cubic-bezier(0.32, 0.72, 0, 1) and the same per-index delay. Keep the total under about 900ms by capping the delay at 350ms for long pages. With the View Transitions API use a shared class for the blocks (view-transition-class) and the --i delay on ::view-transition-old(*) and ::view-transition-new(*). Animate only opacity and transform, disable pointer events during the sequence, and under prefers-reduced-motion: reduce use a single quick cross-fade. No libraries.`,
+});
+
+ML.add({
+  id: 'transitions-zoom-card',
+  cat: 'transitions',
+  title: 'Zoom into card',
+  sub: 'A card scales up into the next page',
+  html: `<div class="win"><div class="bar"><i></i><i></i><i></i><span class="url"></span></div><div class="vp">
+<div class="pg a"><i class="k k1"></i><i class="k k2"></i><i class="k k3"></i><i class="k k4"></i></div>
+<div class="pg b zc"><span class="lb">Plans</span><div class="hd"><u></u></div><p class="t"></p><p class="r"></p><p class="r s"></p><div class="cd"><i></i><i></i></div></div>
+</div></div>`,
+  css: `
+.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .win{position:relative;width:84%;height:84%;display:flex;flex-direction:column;background:var(--ml-bg);border-radius:12px;box-shadow:var(--ml-shadow);overflow:hidden}
+.d .bar{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid var(--ml-line)}
+.d .bar i{width:6px;height:6px;border-radius:50%;background:var(--ml-bar)}
+.d .bar .url{margin-left:8px;width:42%;height:6px;border-radius:3px;background:var(--ml-bar-2)}
+.d .vp{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--ml-surface)}
+.d .pg{position:absolute;inset:0;display:flex;flex-direction:column;gap:7px;padding:10px 12px;background:var(--ml-bg)}
+.d .pg .lb{font:600 9px/1 var(--ml-mono);color:var(--ml-muted);letter-spacing:.05em;text-transform:uppercase}
+.d .nv{display:flex;align-items:center;gap:6px}
+.d .nv b{width:9px;height:9px;border-radius:3px;background:var(--ml-bar)}
+.d .nv em{margin-left:auto;width:22%;height:5px;border-radius:3px;background:var(--ml-bar-2)}
+.d .hr{position:relative;flex:1;min-height:0;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,var(--ml-accent-soft),var(--ml-bar-2))}
+.d .hr u{position:absolute;right:20%;top:18%;width:13px;height:13px;border-radius:50%;background:var(--ml-accent-line)}
+.d .hr::after{content:"";position:absolute;left:0;right:0;bottom:0;height:48%;background:var(--ml-bar);clip-path:polygon(0 100%,0 60%,22% 20%,44% 62%,62% 34%,100% 70%,100% 100%)}
+.d .pg .r{flex:none;height:6px;margin:0;border-radius:3px;background:var(--ml-bar-2)}
+.d .pg .r.s{width:55%}
+.d .pg .r.m{width:76%}
+.d .tr{flex:none;display:flex;gap:6px;height:22%}
+.d .tr i{flex:1;border-radius:7px;background:var(--ml-bar-2)}
+.d .hd{position:relative;flex:none;height:40%;border-radius:9px;overflow:hidden;background:var(--ml-grad)}
+.d .hd u{position:absolute;left:18%;top:20%;width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.85)}
+.d .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;background:rgba(255,255,255,.28);clip-path:polygon(0 100%,0 66%,26% 24%,48% 62%,70% 30%,100% 68%,100% 100%)}
+.d .pg .t{flex:none;height:9px;width:46%;border-radius:4px;background:var(--ml-bar)}
+.d .cd{flex:1;min-height:0;display:flex;gap:6px}
+.d .cd i{flex:1;border-radius:8px;background:var(--ml-surface);border:1px solid var(--ml-line)}
+
+.d .pg.a .k{position:absolute;width:42%;height:42%;border-radius:11px;background:var(--ml-bar-2);animation:zk 6s infinite var(--ml-ease)}
+.d .pg.a .k::before{content:"";position:absolute;left:12%;top:16%;width:46%;height:7%;border-radius:3px;background:var(--ml-bar)}
+.d .pg.a .k::after{content:"";position:absolute;left:12%;top:32%;width:30%;height:7%;border-radius:3px;background:var(--ml-bar)}
+.d .k1{left:6%;top:6%}
+.d .k2{left:52%;top:6%;visibility:hidden}
+.d .k3{left:6%;top:52%}
+.d .k4{left:52%;top:52%}
+.d .zc{z-index:2;box-shadow:var(--ml-shadow-lg);animation:zz 6s infinite var(--ml-ease)}
+@keyframes zk{0%,24%{opacity:1;transform:none}34%,80%{opacity:0;transform:scale(.9)}92%,100%{opacity:1;transform:none}}
+@keyframes zz{0%,24%{transform:translate(23%,-23%) scale(.42);border-radius:26px}40%,76%{transform:none;border-radius:0}92%,100%{transform:translate(23%,-23%) scale(.42);border-radius:26px}}
+`,
+  prompt: `Build a zoom-into-card page transition: a card in a grid scales up until it becomes the next page, and zooming back out returns to the grid. Render the detail page as a real element that shares the card's content, and at rest give it the card's geometry using transform only: translate to the card's center and scale(cardWidth / viewportWidth) with transform-origin: center, plus a large border-radius (26px) that is scaled down with it. On click, animate it to transform: none and border-radius: 0 over about 550ms with cubic-bezier(0.32, 0.72, 0, 1), while the other cards fade and shrink to scale(0.9). Compute the starting transform from getBoundingClientRect on the clicked card (FLIP) so it works at any grid size. The View Transitions API gives the same morph automatically if the card and the page share a view-transition-name. Keep a soft large shadow on the zooming layer, lock page scroll during the transition, restore focus to the originating card when going back, and under prefers-reduced-motion: reduce cross-fade instead. No libraries.`,
+});
+
+ML.add({
+  id: 'transitions-blinds',
+  cat: 'transitions',
+  title: 'Blinds',
+  sub: 'Vertical slats flip across the page',
+  html: `<div class="win"><div class="bar"><i></i><i></i><i></i><span class="url"></span></div><div class="vp"><div class="pg a"><div class="nv"><b></b><span class="lb">Home</span><em></em></div><div class="hr"><u></u></div><p class="r m"></p><p class="r s"></p><div class="tr"><i></i><i></i><i></i></div></div><div class="pg b"><span class="lb">Plans</span><div class="hd"><u></u></div><p class="t"></p><p class="r"></p><p class="r s"></p><div class="cd"><i></i><i></i></div></div><div class="bl"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></div></div></div>`,
+  css: `
+.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .win{position:relative;width:84%;height:84%;display:flex;flex-direction:column;background:var(--ml-bg);border-radius:12px;box-shadow:var(--ml-shadow);overflow:hidden}
+.d .bar{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid var(--ml-line)}
+.d .bar i{width:6px;height:6px;border-radius:50%;background:var(--ml-bar)}
+.d .bar .url{margin-left:8px;width:42%;height:6px;border-radius:3px;background:var(--ml-bar-2)}
+.d .vp{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--ml-surface)}
+.d .pg{position:absolute;inset:0;display:flex;flex-direction:column;gap:7px;padding:10px 12px;background:var(--ml-bg)}
+.d .pg .lb{font:600 9px/1 var(--ml-mono);color:var(--ml-muted);letter-spacing:.05em;text-transform:uppercase}
+.d .nv{display:flex;align-items:center;gap:6px}
+.d .nv b{width:9px;height:9px;border-radius:3px;background:var(--ml-bar)}
+.d .nv em{margin-left:auto;width:22%;height:5px;border-radius:3px;background:var(--ml-bar-2)}
+.d .hr{position:relative;flex:1;min-height:0;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,var(--ml-accent-soft),var(--ml-bar-2))}
+.d .hr u{position:absolute;right:20%;top:18%;width:13px;height:13px;border-radius:50%;background:var(--ml-accent-line)}
+.d .hr::after{content:"";position:absolute;left:0;right:0;bottom:0;height:48%;background:var(--ml-bar);clip-path:polygon(0 100%,0 60%,22% 20%,44% 62%,62% 34%,100% 70%,100% 100%)}
+.d .pg .r{flex:none;height:6px;margin:0;border-radius:3px;background:var(--ml-bar-2)}
+.d .pg .r.s{width:55%}
+.d .pg .r.m{width:76%}
+.d .tr{flex:none;display:flex;gap:6px;height:22%}
+.d .tr i{flex:1;border-radius:7px;background:var(--ml-bar-2)}
+.d .hd{position:relative;flex:none;height:40%;border-radius:9px;overflow:hidden;background:var(--ml-grad)}
+.d .hd u{position:absolute;left:18%;top:20%;width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.85)}
+.d .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;background:rgba(255,255,255,.28);clip-path:polygon(0 100%,0 66%,26% 24%,48% 62%,70% 30%,100% 68%,100% 100%)}
+.d .pg .t{flex:none;height:9px;width:46%;border-radius:4px;background:var(--ml-bar)}
+.d .cd{flex:1;min-height:0;display:flex;gap:6px}
+.d .cd i{flex:1;border-radius:8px;background:var(--ml-surface);border:1px solid var(--ml-line)}
+
+.d .bl{position:absolute;inset:0;z-index:3;display:flex;perspective:700px}
+.d .bl i{flex:1;transform:rotateY(90deg);background:var(--ml-grad);background-size:600% 100%;background-position:calc(var(--i) * 20%) 0;box-shadow:inset -1px 0 0 rgba(255,255,255,.28);animation:bs 6s infinite var(--ml-ease);animation-delay:calc(var(--i) * 55ms)}
+.d .a{animation:ba 6s infinite linear}
+.d .b{animation:bb 6s infinite linear}
+@keyframes bs{0%,20%{transform:rotateY(90deg)}30%,40%{transform:rotateY(0)}50%{transform:rotateY(-90deg)}50.1%,62%{transform:rotateY(90deg)}72%,82%{transform:rotateY(0)}92%,100%{transform:rotateY(-90deg)}}
+@keyframes ba{0%,37.9%{opacity:1}38%,79.9%{opacity:0}80%,100%{opacity:1}}
+@keyframes bb{0%,37.9%{opacity:0}38%,79.9%{opacity:1}80%,100%{opacity:0}}
+`,
+  prompt: `Build a venetian-blinds page transition. Overlay a row of 6 to 10 vertical slats (flex: 1 each, full height) on the page inside a container with perspective: 700px. Each slat starts edge-on at transform: rotateY(90deg), flips to rotateY(0) to cover the old page, then continues to rotateY(-90deg) to reveal the new page underneath. Stagger the slats with animation-delay: calc(var(--i) * 55ms). Paint them with one continuous gradient across the whole row by setting background-size: 600% 100% and background-position: calc(var(--i) * 20%) 0 on each slat, so the slats read as one surface. Swap the route content at the moment every slat is covering the page (after cover duration + stagger total), not earlier. Each flip takes about 450ms with cubic-bezier(0.32, 0.72, 0, 1); keep total under 1.1s. Animate only transform, set pointer-events: none on the overlay, and under prefers-reduced-motion: reduce use a plain cross-fade. No libraries.`,
+});
+
+ML.add({
+  id: 'transitions-blur-cross',
+  cat: 'transitions',
+  title: 'Crossfade with blur',
+  sub: 'Pages dissolve through a soft blur',
+  html: `<div class="win"><div class="bar"><i></i><i></i><i></i><span class="url"></span></div><div class="vp"><div class="pg a"><div class="nv"><b></b><span class="lb">Home</span><em></em></div><div class="hr"><u></u></div><p class="r m"></p><p class="r s"></p><div class="tr"><i></i><i></i><i></i></div></div><div class="pg b"><span class="lb">Plans</span><div class="hd"><u></u></div><p class="t"></p><p class="r"></p><p class="r s"></p><div class="cd"><i></i><i></i></div></div></div></div>`,
+  css: `
+.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .win{position:relative;width:84%;height:84%;display:flex;flex-direction:column;background:var(--ml-bg);border-radius:12px;box-shadow:var(--ml-shadow);overflow:hidden}
+.d .bar{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid var(--ml-line)}
+.d .bar i{width:6px;height:6px;border-radius:50%;background:var(--ml-bar)}
+.d .bar .url{margin-left:8px;width:42%;height:6px;border-radius:3px;background:var(--ml-bar-2)}
+.d .vp{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--ml-surface)}
+.d .pg{position:absolute;inset:0;display:flex;flex-direction:column;gap:7px;padding:10px 12px;background:var(--ml-bg)}
+.d .pg .lb{font:600 9px/1 var(--ml-mono);color:var(--ml-muted);letter-spacing:.05em;text-transform:uppercase}
+.d .nv{display:flex;align-items:center;gap:6px}
+.d .nv b{width:9px;height:9px;border-radius:3px;background:var(--ml-bar)}
+.d .nv em{margin-left:auto;width:22%;height:5px;border-radius:3px;background:var(--ml-bar-2)}
+.d .hr{position:relative;flex:1;min-height:0;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,var(--ml-accent-soft),var(--ml-bar-2))}
+.d .hr u{position:absolute;right:20%;top:18%;width:13px;height:13px;border-radius:50%;background:var(--ml-accent-line)}
+.d .hr::after{content:"";position:absolute;left:0;right:0;bottom:0;height:48%;background:var(--ml-bar);clip-path:polygon(0 100%,0 60%,22% 20%,44% 62%,62% 34%,100% 70%,100% 100%)}
+.d .pg .r{flex:none;height:6px;margin:0;border-radius:3px;background:var(--ml-bar-2)}
+.d .pg .r.s{width:55%}
+.d .pg .r.m{width:76%}
+.d .tr{flex:none;display:flex;gap:6px;height:22%}
+.d .tr i{flex:1;border-radius:7px;background:var(--ml-bar-2)}
+.d .hd{position:relative;flex:none;height:40%;border-radius:9px;overflow:hidden;background:var(--ml-grad)}
+.d .hd u{position:absolute;left:18%;top:20%;width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.85)}
+.d .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;background:rgba(255,255,255,.28);clip-path:polygon(0 100%,0 66%,26% 24%,48% 62%,70% 30%,100% 68%,100% 100%)}
+.d .pg .t{flex:none;height:9px;width:46%;border-radius:4px;background:var(--ml-bar)}
+.d .cd{flex:1;min-height:0;display:flex;gap:6px}
+.d .cd i{flex:1;border-radius:8px;background:var(--ml-surface);border:1px solid var(--ml-line)}
+
+.d .a{animation:xa 6s infinite var(--ml-ease)}
+.d .b{animation:xb 6s infinite var(--ml-ease)}
+@keyframes xa{0%,30%{opacity:1;filter:blur(0);transform:none}46%,76%{opacity:0;filter:blur(7px);transform:scale(1.03)}92%,100%{opacity:1;filter:blur(0);transform:none}}
+@keyframes xb{0%,30%{opacity:0;filter:blur(7px);transform:scale(.98)}46%,76%{opacity:1;filter:blur(0);transform:none}92%,100%{opacity:0;filter:blur(7px);transform:scale(.98)}}
+`,
+  prompt: `Build a crossfade page transition that dissolves through a soft blur. Both pages stay stacked and overlap during the transition: the outgoing page animates from opacity: 1; filter: blur(0) to opacity: 0; filter: blur(8px) with a slight scale(1.03), while the incoming page runs the reverse from opacity: 0; filter: blur(8px); transform: scale(0.98) to rest. Duration about 500ms with cubic-bezier(0.32, 0.72, 0, 1); the two animations start together so the pages blend into each other instead of passing through a gap. With the View Transitions API, set animation on ::view-transition-old(root) and ::view-transition-new(root) with these keyframes and mix-blend-mode: normal. The blur is the expensive part: keep it under 10px, apply it only to the two page layers (never a full-viewport backdrop-filter over live content), and add will-change: filter, opacity only for the duration of the transition. Under prefers-reduced-motion: reduce drop the blur and use a 100ms opacity fade. No libraries.`,
+});
+
+ML.add({
+  id: 'transitions-stack-push',
+  cat: 'transitions',
+  title: 'Stack push',
+  sub: 'New page slides over, old one dims',
+  html: `<div class="win"><div class="bar"><i></i><i></i><i></i><span class="url"></span></div><div class="vp"><div class="pg a"><div class="nv"><b></b><span class="lb">Home</span><em></em></div><div class="hr"><u></u></div><p class="r m"></p><p class="r s"></p><div class="tr"><i></i><i></i><i></i></div></div><div class="pg b"><span class="lb">Plans</span><div class="hd"><u></u></div><p class="t"></p><p class="r"></p><p class="r s"></p><div class="cd"><i></i><i></i></div></div><i class="dm"></i></div></div>`,
+  css: `
+.d{display:grid;place-items:center;background:var(--ml-surface)}
+.d .win{position:relative;width:84%;height:84%;display:flex;flex-direction:column;background:var(--ml-bg);border-radius:12px;box-shadow:var(--ml-shadow);overflow:hidden}
+.d .bar{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid var(--ml-line)}
+.d .bar i{width:6px;height:6px;border-radius:50%;background:var(--ml-bar)}
+.d .bar .url{margin-left:8px;width:42%;height:6px;border-radius:3px;background:var(--ml-bar-2)}
+.d .vp{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--ml-surface)}
+.d .pg{position:absolute;inset:0;display:flex;flex-direction:column;gap:7px;padding:10px 12px;background:var(--ml-bg)}
+.d .pg .lb{font:600 9px/1 var(--ml-mono);color:var(--ml-muted);letter-spacing:.05em;text-transform:uppercase}
+.d .nv{display:flex;align-items:center;gap:6px}
+.d .nv b{width:9px;height:9px;border-radius:3px;background:var(--ml-bar)}
+.d .nv em{margin-left:auto;width:22%;height:5px;border-radius:3px;background:var(--ml-bar-2)}
+.d .hr{position:relative;flex:1;min-height:0;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,var(--ml-accent-soft),var(--ml-bar-2))}
+.d .hr u{position:absolute;right:20%;top:18%;width:13px;height:13px;border-radius:50%;background:var(--ml-accent-line)}
+.d .hr::after{content:"";position:absolute;left:0;right:0;bottom:0;height:48%;background:var(--ml-bar);clip-path:polygon(0 100%,0 60%,22% 20%,44% 62%,62% 34%,100% 70%,100% 100%)}
+.d .pg .r{flex:none;height:6px;margin:0;border-radius:3px;background:var(--ml-bar-2)}
+.d .pg .r.s{width:55%}
+.d .pg .r.m{width:76%}
+.d .tr{flex:none;display:flex;gap:6px;height:22%}
+.d .tr i{flex:1;border-radius:7px;background:var(--ml-bar-2)}
+.d .hd{position:relative;flex:none;height:40%;border-radius:9px;overflow:hidden;background:var(--ml-grad)}
+.d .hd u{position:absolute;left:18%;top:20%;width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.85)}
+.d .hd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;background:rgba(255,255,255,.28);clip-path:polygon(0 100%,0 66%,26% 24%,48% 62%,70% 30%,100% 68%,100% 100%)}
+.d .pg .t{flex:none;height:9px;width:46%;border-radius:4px;background:var(--ml-bar)}
+.d .cd{flex:1;min-height:0;display:flex;gap:6px}
+.d .cd i{flex:1;border-radius:8px;background:var(--ml-surface);border:1px solid var(--ml-line)}
+
+.d .a{animation:sa 6s infinite var(--ml-ease)}
+.d .dm{position:absolute;inset:0;z-index:1;background:rgba(35,15,10,.16);opacity:0;pointer-events:none;animation:sd 6s infinite var(--ml-ease)}
+.d .b{z-index:2;animation:sb 6s infinite var(--ml-ease);box-shadow:-12px 0 26px rgba(35,15,10,.14)}
+@keyframes sa{0%,30%{transform:none}44%,80%{transform:translateX(-28%)}94%,100%{transform:none}}
+@keyframes sd{0%,30%{opacity:0}44%,80%{opacity:1}94%,100%{opacity:0}}
+@keyframes sb{0%,30%{transform:translateX(120%)}44%,80%{transform:none}94%,100%{transform:translateX(120%)}}
+`,
+  prompt: `Build an iOS-style stack-navigation push transition. The new page slides in from the right edge over the old one (transform: translateX(100%) to 0) while the old page shifts left by about 28% of its width and darkens slightly (an overlay going from opacity 0 to 0.16 of a near-black), so the stack reads as layered cards with parallax between them. Give the new page a soft shadow on its left edge (box-shadow: -12px 0 26px rgba(35,15,10, 0.14)). Duration 450ms with cubic-bezier(0.32, 0.72, 0, 1). Popping back reverses it exactly, and a swipe from the left edge should drag the top page with the pointer (pointer events, transform follows the finger, release springs to the nearest end based on velocity). Use the View Transitions API with a data-direction attribute for forward and back, or two absolutely positioned page elements with classes. Animate only transform and opacity, make the covered page inert, move focus to the new page heading, and under prefers-reduced-motion: reduce use a short cross-fade. No libraries.`,
+});
+})();

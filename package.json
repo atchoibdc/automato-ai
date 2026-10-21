@@ -1,0 +1,25 @@
+{
+  "name": "automato-wireframe-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Automato AI — UI Library browser and AI wireframe builder.",
+  "scripts": {
+    "crawl": "node scripts/crawl-library.mjs",
+    "catalog": "node scripts/build-catalog.mjs",
+    "thumbs": "node scripts/render-thumbs.mjs",
+    "setup:library": "node scripts/crawl-library.mjs && node scripts/build-catalog.mjs",
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test \"tests/*.test.mjs\"",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.47.0"
+  }
+}

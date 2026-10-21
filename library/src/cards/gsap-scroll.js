@@ -1,0 +1,2152 @@
+// ScrollTrigger (GSAP 3.15.0). Each card: a gsap.context scoped to root, pause sync on data-paused,
+// ctx.revert() on cleanup.
+(() => {
+  ML.add({
+    id: 'gsap-scroll-word-fill',
+    cat: 'gsap-scroll',
+    title: 'Words fill on scroll',
+    sub: 'A statement inks in word by word',
+    libs: ['gsap'],
+    html: `<div class="sc"><div class="inner">
+  <header class="nav"><b>Lumen</b><span>Story</span></header>
+  <section class="intro"><p class="k">Our story</p><h3>Calm software<br>for busy teams.</h3></section>
+  <section class="say"><p class="big">Every screen earns its place. Every motion has a reason. Nothing makes you wait, and nothing asks twice.</p></section>
+  <section class="end"><div class="stat"><b>12k</b><span>teams</span></div><div class="stat"><b>4.9</b><span>rating</span></div><div class="stat"><b>0</b><span>spinners</span></div></section>
+</div></div>
+<div class="rail" aria-hidden="true"><i></i></div>`,
+    css: `
+.d{background:linear-gradient(180deg,#fff 0%,#f3f7ff 100%)}
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 90%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 90%,transparent 100%)}
+.d .sc::-webkit-scrollbar{display:none}
+.d .inner{padding:0 9% 18%}
+.d .nav{display:flex;justify-content:space-between;align-items:center;padding:16px 0}
+.d .nav b{font:700 13px/1 var(--ml-font);letter-spacing:-.02em;color:var(--ml-ink)}
+.d .nav span{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-muted)}
+.d .intro{padding:18% 0 22%}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d h3{margin-top:8px;font:650 26px/1.02 var(--ml-font);letter-spacing:-.045em;color:var(--ml-ink)}
+.d .say{padding:4% 0 30%}
+.d .big{font:600 21px/1.18 var(--ml-font);letter-spacing:-.035em;color:var(--ml-ink)}
+.d .end{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding-bottom:10%}
+.d .stat{padding:14px 12px;border-radius:14px;background:#fff;box-shadow:var(--ml-shadow)}
+.d .stat b{display:block;font:650 20px/1 var(--ml-font);letter-spacing:-.04em;color:var(--ml-accent-ink)}
+.d .stat span{display:block;margin-top:6px;font:500 10px/1 var(--ml-font);color:var(--ml-muted)}
+.d .rail{position:absolute;right:14px;top:22%;bottom:22%;width:2px;border-radius:2px;background:var(--ml-line);pointer-events:none}
+.d .rail i{position:absolute;inset:0;border-radius:2px;background:var(--ml-accent);transform-origin:50% 0;transform:scaleY(0)}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger, SplitText } = lib;
+      gsap.registerPlugin(ScrollTrigger, SplitText);
+      const sc = root.querySelector('.sc');
+      const inner = root.querySelector('.inner');
+      const big = root.querySelector('.big');
+
+      // Everything GSAP creates inside this context is scoped to root and undone by ctx.revert().
+      let auto, back, resume;
+      const ctx = gsap.context(() => {
+        const split = SplitText.create(big, { type: 'words' });
+        gsap.fromTo(split.words, { opacity: 0.14 }, {
+          opacity: 1, stagger: 0.1, ease: 'none',
+          scrollTrigger: { trigger: big, scroller: sc, start: 'top 78%', end: 'bottom 42%', scrub: 0.6 },
+        });
+        gsap.fromTo(root.querySelector('.rail i'), { scaleY: 0 }, {
+          scaleY: 1, ease: 'none',
+          scrollTrigger: { trigger: inner, scroller: sc, start: 'top top', end: 'bottom bottom', scrub: 0.3 },
+        });
+        gsap.from(root.querySelectorAll('.stat'), {
+          y: 24, opacity: 0, duration: 0.7, stagger: 0.08, ease: 'power3.out',
+          scrollTrigger: { trigger: root.querySelector('.end'), scroller: sc, start: 'top 85%', toggleActions: 'play none none reverse' },
+        });
+
+        // Autoplay: a proxy value glides the scroller down and back; the visitor's wheel or touch
+        // pauses it, and after 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // write through ScrollTrigger's scroll function and update this card's triggers in the same
+        // frame, so pinned elements never trail the autoplay by a frame
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 6, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a "words fill on scroll" story section with GSAP 3 and ScrollTrigger. Load gsap, ScrollTrigger and SplitText from a pinned CDN with an import map and register both plugins. Layout: a short intro (small mono eyebrow, a two-line headline), then one large statement paragraph of about 20 words in a tight semibold sans at around 40px on desktop, then a row of three stat cards. Split the statement into words with SplitText.create(el, { type: 'words' }) and animate them fromTo opacity 0.14 to 1 with a stagger of 0.1 and ease 'none', tied to a ScrollTrigger on the paragraph with start 'top 78%', end 'bottom 42%' and scrub 0.6 so the ink follows the scrollbar and glides slightly behind it. Add a thin progress rail on the right that scales from 0 to 1 with scrub 0.3 over the whole section. Reveal the stat cards with y 24 and opacity 0, stagger 0.08, ease power3.out, toggleActions 'play none none reverse'. Wrap everything in gsap.context(() => {...}, sectionElement) and call ctx.revert() when the component unmounts so the split text and triggers are undone. Keep colours to a white page, near-black ink and one blue accent. Respect prefers-reduced-motion with gsap.matchMedia: show every word at full opacity and skip the scrub.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-stack-cards',
+    cat: 'gsap-scroll',
+    title: 'Stacking feature cards',
+    sub: 'Panels stack, the one below shrinks',
+    libs: ['gsap'],
+    html: `<div class="sc">
+  <section class="pin">
+    <header class="top"><span class="k">Why Lumen</span><h3>Four habits,<br>one calm workspace.</h3></header>
+    <article class="card c1"><span class="n">01</span><b>Focus</b><p>One inbox for every request, sorted for you.</p><div class="viz"><i style="flex:5"></i><i style="flex:3"></i><i style="flex:2"></i></div><span class="veil"></span></article>
+    <article class="card c2"><span class="n">02</span><b>Flow</b><p>Drafts move to review the moment they are ready.</p><div class="viz up"><i style="height:30%"></i><i style="height:55%"></i><i style="height:80%"></i><i style="height:100%"></i></div><span class="veil"></span></article>
+    <article class="card c3"><span class="n">03</span><b>Sync</b><p>Every device shows the same state, instantly.</p><div class="viz dots"><i></i><i></i><i></i><i></i><i></i></div><span class="veil"></span></article>
+    <article class="card c4"><span class="n">04</span><b>Ship</b><p>Hand off to the whole team with a single tap.</p><div class="viz end"><i style="flex:1"></i><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></div><span class="veil"></span></article>
+  </section>
+  <section class="out"><b>Ready in minutes.</b><span class="btn">Try Lumen</span></section>
+</div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;}
+.d .sc::-webkit-scrollbar{display:none}
+.d .pin{position:relative;height:100%;overflow:hidden;background:linear-gradient(180deg,#fff 0%,#EEF4FF 100%)}
+.d .top{position:absolute;left:8%;right:8%;top:7%}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d h3{margin-top:7px;font:650 22px/1.04 var(--ml-font);letter-spacing:-.04em;color:var(--ml-ink)}
+.d .card{position:absolute;left:7%;right:7%;top:40%;bottom:6%;padding:12px 15px;border-radius:16px;background:#fff;box-shadow:var(--ml-shadow-lg);transform-origin:50% 0;display:flex;flex-direction:column;gap:5px;overflow:hidden}
+.d .c2{background:#F2F7FF}
+.d .c3{background:#E3EEFF}
+.d .c4{background:var(--ml-grad);color:#fff}
+.d .veil{position:absolute;inset:0;background:#2E140C;opacity:0;pointer-events:none}
+.d .n{font:600 9px/1 var(--ml-mono);letter-spacing:.06em;color:var(--ml-accent)}
+.d .card b{font:650 17px/1.05 var(--ml-font);letter-spacing:-.035em}
+.d .card p{font:500 10px/1.35 var(--ml-font);color:var(--ml-muted);max-width:92%}
+.d .c4 .n,.d .c4 p{color:rgba(255,255,255,.84)}
+.d .viz{margin-top:auto;display:flex;gap:5px;align-items:center;height:14px}
+.d .viz i{height:8px;border-radius:99px;background:var(--ml-accent-line)}
+.d .viz.up{align-items:flex-end}
+.d .viz.up i{flex:1;border-radius:4px 4px 2px 2px;background:var(--ml-accent-2)}
+.d .viz.dots{gap:7px}
+.d .viz.dots i{width:10px;height:10px;border-radius:50%;background:var(--ml-accent)}
+.d .viz.dots i:nth-child(n+4){background:#fff;box-shadow:inset 0 0 0 2px var(--ml-accent)}
+.d .viz.end i{background:rgba(255,255,255,.4)}
+.d .viz.end span{display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#fff;color:var(--ml-accent)}
+.d .viz.end svg{width:10px;height:10px}
+.d .out{height:52%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:12px;padding:0 8%;background:#fff}
+.d .out b{font:650 20px/1.05 var(--ml-font);letter-spacing:-.04em}
+.d .btn{padding:8px 15px;border-radius:99px;background:var(--ml-accent);color:#fff;font:600 11px/1 var(--ml-font)}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+
+      ctx = gsap.context(() => {
+        const pin = root.querySelector('.pin');
+        const head = root.querySelector('.top');
+        const cards = Array.from(root.querySelectorAll('.card'));
+        const veils = cards.map((c) => c.querySelector('.veil'));
+
+        // Cards 2-4 wait below the frame; the pinned timeline slides each one up while the cards
+        // beneath it scale down, tuck upward and dim.
+        gsap.set(cards.slice(1), { yPercent: 118 });
+        const tl = gsap.timeline({
+          defaults: { duration: 1, ease: 'power2.inOut' },
+          scrollTrigger: { trigger: pin, scroller: sc, start: 'top top', end: () => '+=' + sc.clientHeight * 2.6, pin: true, scrub: 0.5, invalidateOnRefresh: true },
+        });
+        tl.to(head, { opacity: 0, yPercent: -30, duration: 0.8 }, 0);
+        cards.forEach((card, i) => {
+          if (!i) return;
+          tl.to(card, { yPercent: 0 }, i - 1);
+          for (let j = 0; j < i; j++) {
+            const depth = i - j;
+            tl.to(cards[j], { scale: 1 - 0.05 * depth, yPercent: -8 * depth }, i - 1);
+            tl.to(veils[j], { opacity: 0.07 * depth }, i - 1);
+          }
+        });
+        tl.to({}, { duration: 0.35 });
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 7, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a stacking feature-cards section with GSAP 3 and ScrollTrigger. One full-viewport section is pinned while four rounded cards slide up one after another and stack over each other like a deck. Layout: a small mono eyebrow and a two-line headline at the top, then four absolutely positioned cards (same size, 16 to 24px radius, soft layered shadow) filling the lower 60 percent of the pinned section. Cards 2 to 4 start at yPercent 118 below the frame. Create one gsap.timeline with defaults { duration: 1, ease: 'power2.inOut' } and scrollTrigger { trigger: section, start: 'top top', end: () => '+=' + innerHeight * 2.6, pin: true, scrub: 0.5, invalidateOnRefresh: true }. At timeline position i-1 tween card i to yPercent 0, and in the same step tween every card beneath it to scale 1 - 0.05 * depth and yPercent -8 * depth with transformOrigin '50% 0', while a dark overlay inside each lower card goes to opacity 0.07 * depth. Fade the headline out in the first step. Add a short normal-flow section after the pin so the stack scrolls away. Keep one accent colour on the last card. Wrap in gsap.context and call ctx.revert() on unmount. Under prefers-reduced-motion (gsap.matchMedia) skip the pin and show the cards as a normal vertical list.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-horizontal-track',
+    cat: 'gsap-scroll',
+    title: 'Horizontal scroll track',
+    sub: 'Vertical scroll drives a sideways pin',
+    libs: ['gsap'],
+    html: `<div class="sc">
+  <section class="hz">
+    <header class="hbar"><span class="k">Launch kit</span><span class="cnt">4 steps</span></header>
+    <div class="track">
+      <div class="slide intro"><h3>From idea<br>to live in<br>four moves.</h3><span class="hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+      <article class="slide s"><span class="num">01</span><div class="art"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></div><b>Capture</b><p>Drop ideas in from anywhere.</p></article>
+      <article class="slide s"><span class="num">02</span><div class="art"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/><path d="m3 17.5 9 5 9-5"/></svg></div><b>Shape</b><p>Group them into a plan.</p></article>
+      <article class="slide s"><span class="num">03</span><div class="art"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6M8.2 13.2l7.6 4.6"/></svg></div><b>Share</b><p>Invite the team to review.</p></article>
+      <article class="slide s"><span class="num">04</span><div class="art"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 15c-1.5 1.3-2 5-2 5s3.7-.5 5-2"/><path d="m12 15-3-3a22 22 0 0 1 2-3.9A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22 22 0 0 1-4 2Z"/><path d="M9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5"/></svg></div><b>Launch</b><p>Go live with one click.</p></article>
+      <i class="pad"></i>
+    </div>
+    <div class="bar"><i></i></div>
+  </section>
+</div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;}
+.d .sc::-webkit-scrollbar{display:none}
+.d .hz{position:relative;height:100%;overflow:hidden;background:linear-gradient(180deg,#fff 0%,#F1F6FF 100%)}
+.d .hbar{position:absolute;left:8%;right:8%;top:6%;display:flex;justify-content:space-between;align-items:center}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d .cnt{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-muted)}
+.d .track{position:absolute;left:0;top:19%;bottom:14%;width:100%;display:flex;gap:5%;padding-left:8%;will-change:transform}
+.d .slide{flex:0 0 58%;position:relative;display:flex;flex-direction:column;gap:4px;min-height:0}
+.d .intro{flex-basis:52%;justify-content:center}
+.d .intro h3{font:650 25px/1.02 var(--ml-font);letter-spacing:-.045em;color:var(--ml-ink)}
+.d .hint{margin-top:12px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--ml-accent);color:#fff}
+.d .hint svg{width:15px;height:15px}
+.d .s{padding:10px 12px 12px;border-radius:16px;background:#fff;box-shadow:var(--ml-shadow);overflow:hidden}
+.d .num{position:absolute;right:10px;top:4px;font:700 38px/1 var(--ml-font);letter-spacing:-.05em;color:var(--ml-accent-soft)}
+.d .art{flex:1;min-height:0;display:grid;place-items:center;border-radius:11px;background:linear-gradient(135deg,#FFF0EE,#C7DDFF);color:var(--ml-accent)}
+.d .art svg{width:34%;height:auto;max-height:70%}
+.d .s b{margin-top:5px;font:650 15px/1.05 var(--ml-font);letter-spacing:-.03em;position:relative}
+.d .s p{font:500 10px/1.3 var(--ml-font);color:var(--ml-muted)}
+.d .pad{flex:0 0 3%}
+.d .bar{position:absolute;left:8%;right:8%;bottom:6%;height:3px;border-radius:3px;background:var(--ml-line)}
+.d .bar i{position:absolute;inset:0;border-radius:3px;background:var(--ml-accent);transform-origin:0 50%;transform:scaleX(0)}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+
+      ctx = gsap.context(() => {
+        const hz = root.querySelector('.hz');
+        const track = root.querySelector('.track');
+        const bar = root.querySelector('.bar i');
+        const dist = () => Math.max(0, track.scrollWidth - hz.clientWidth);
+
+        // A vertical scroll range is pinned and spent on a sideways tween (ease none so scroll maps 1:1).
+        const h = gsap.to(track, {
+          x: () => -dist(),
+          ease: 'none',
+          scrollTrigger: {
+            trigger: hz, scroller: sc, start: 'top top', end: () => '+=' + dist(), pin: true, scrub: 0.6, invalidateOnRefresh: true,
+            onUpdate: (self) => gsap.set(bar, { scaleX: self.progress }),
+          },
+        });
+
+        // Items inside the track react to their horizontal position through containerAnimation.
+        root.querySelectorAll('.s').forEach((slide) => {
+          const link = { trigger: slide, scroller: sc, containerAnimation: h, scrub: true };
+          gsap.fromTo(slide.querySelector('.art'), { scale: 0.78, opacity: 0.35 }, {
+            scale: 1, opacity: 1, ease: 'none', scrollTrigger: { ...link, start: 'left 92%', end: 'left 46%' },
+          });
+          gsap.fromTo(slide.querySelector('.num'), { xPercent: 70 }, {
+            xPercent: -30, ease: 'none', scrollTrigger: { ...link, start: 'left right', end: 'right left' },
+          });
+        });
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 8, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a horizontal scroll section with GSAP 3 and ScrollTrigger: the page scrolls vertically, a full-viewport section stays pinned, and a row of cards travels sideways. Markup: a section containing a flex track (display flex, gap, padding-left, will-change transform) with one text intro panel and four cards of about 58 percent of the viewport width each, plus a thin progress bar. Create const h = gsap.to(track, { x: () => -(track.scrollWidth - section.clientWidth), ease: 'none', scrollTrigger: { trigger: section, start: 'top top', end: () => '+=' + (track.scrollWidth - section.clientWidth), pin: true, scrub: 0.6, invalidateOnRefresh: true, onUpdate: (self) => gsap.set(bar, { scaleX: self.progress }) } }). For items that react to their sideways position, give each its own tween with scrollTrigger { trigger: card, containerAnimation: h, start: 'left 92%', end: 'left 46%', scrub: true }: the card art goes fromTo scale 0.78 and opacity 0.35 to 1, and a large outlined number drifts with xPercent from 70 to -30 over start 'left right' to end 'right left'. Use ease 'none' on every scrubbed tween. Wrap it in gsap.context and revert on unmount. With gsap.matchMedia and prefers-reduced-motion, skip the pin and let the track scroll natively with overflow-x auto.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-hero-zoom',
+    cat: 'gsap-scroll',
+    title: 'Hero zoom-out',
+    sub: 'A full-bleed scene shrinks into a card',
+    libs: ['gsap'],
+    html: `<div class="sc">
+  <section class="pin">
+    <header class="hd"><span class="k">Horizon 2</span><h3>Light that follows<br>every hour.</h3></header>
+    <div class="media">
+      <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="hzm-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7DB6FF"/><stop offset=".58" stop-color="#FFF0ED"/><stop offset="1" stop-color="#F3F8FF"/></linearGradient>
+        </defs>
+        <rect width="400" height="300" fill="url(#hzm-sky)"/>
+        <circle cx="282" cy="118" r="62" fill="#fff" opacity=".28"/>
+        <circle cx="282" cy="118" r="36" fill="#fff" opacity=".92"/>
+        <path d="M0 196 L58 158 L112 188 L172 118 L242 184 L302 148 L400 202 V300 H0Z" fill="#FFC2B3"/>
+        <path d="M0 232 L82 184 L152 226 L222 170 L300 230 L362 198 L400 220 V300 H0Z" fill="#5F9DFF"/>
+        <path d="M0 272 C80 238 150 262 230 244 S350 234 400 256 V300 H0Z" fill="#FF4433"/>
+      </svg>
+      <div class="ov"><b>Horizon</b><span>Every hour, its own light.</span></div>
+    </div>
+    <footer class="meta"><span>Scene 01 - Sunrise</span><span>6:42 am</span></footer>
+  </section>
+  <section class="out"><b>Made for every hour.</b><p>Warm at dawn, crisp at noon, quiet at night.</p></section>
+</div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;}
+.d .sc::-webkit-scrollbar{display:none}
+.d .pin{position:relative;height:100%;overflow:hidden;background:#fff}
+.d .hd{position:absolute;left:8%;right:8%;top:5%}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d h3{margin-top:7px;font:650 19px/1.04 var(--ml-font);letter-spacing:-.04em;color:var(--ml-ink)}
+.d .media{position:absolute;inset:0;overflow:hidden;transform-origin:50% 84%;box-shadow:0 24px 50px rgba(10,60,160,.22)}
+.d .media svg{display:block;width:100%;height:100%}
+.d .ov{position:absolute;left:8%;bottom:9%;display:flex;flex-direction:column;gap:6px;color:#fff}
+.d .ov b{font:700 38px/1 var(--ml-font);letter-spacing:-.05em}
+.d .ov span{font:500 11px/1 var(--ml-font);opacity:.9}
+.d .meta{position:absolute;left:10%;right:10%;bottom:2%;display:flex;justify-content:space-between;font:600 8px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-muted)}
+.d .out{height:46%;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 8%;background:#fff}
+.d .out b{font:650 19px/1.05 var(--ml-font);letter-spacing:-.04em}
+.d .out p{font:500 11px/1.35 var(--ml-font);color:var(--ml-muted)}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+
+      ctx = gsap.context(() => {
+        const pin = root.querySelector('.pin');
+        const media = root.querySelector('.media');
+        const ov = root.querySelector('.ov');
+        const hd = root.querySelector('.hd');
+        const meta = root.querySelector('.meta');
+
+        gsap.set([hd, meta], { opacity: 0, y: 14 });
+        const tl = gsap.timeline({
+          defaults: { ease: 'power2.inOut' },
+          scrollTrigger: { trigger: pin, scroller: sc, start: 'top top', end: () => '+=' + sc.clientHeight * 1.5, pin: true, scrub: 0.5, invalidateOnRefresh: true },
+        });
+        // The scene scales toward its bottom edge and rounds off; the headline lands in the room it frees.
+        tl.to(media, { scale: 0.58, borderRadius: 44, duration: 1 }, 0)
+          .to(ov, { opacity: 0, y: -14, duration: 0.4, ease: 'power1.out' }, 0)
+          .to(hd, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 0.55)
+          .to(meta, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, 0.85)
+          .to({}, { duration: 0.35 });
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 7, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a hero zoom-out with GSAP 3 and ScrollTrigger. A full-bleed media panel (image, video or illustration) fills the first viewport with large white text on it. As the visitor scrolls, the panel shrinks into a rounded card while a headline appears in the space above it. Markup: a section pinned for about 1.5 viewport heights containing a headline block (opacity 0, y 14), the media element positioned with inset 0 and transform-origin '50% 80%' so it shrinks toward its bottom edge, an overlay title inside the media, and a small caption row at the bottom. Create one gsap.timeline with defaults { ease: 'power2.inOut' } and scrollTrigger { trigger: section, start: 'top top', end: () => '+=' + innerHeight * 1.5, pin: true, scrub: 0.5, invalidateOnRefresh: true }. Tween the media to scale 0.6 and borderRadius 44 over 1 unit (the radius shrinks with the scale, so it lands near 26px), fade and lift the overlay title out in the first 0.4, bring the headline in at 0.55 with ease 'power2.out', and the caption at 0.85. Add a normal-flow section after it. Keep the page white with one blue accent. Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) show the final card layout statically.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-sticky-steps',
+    cat: 'gsap-scroll',
+    title: 'Sticky product steps',
+    sub: 'A pinned visual changes with each step',
+    libs: ['gsap'],
+    html: `<div class="sc"><div class="wrap">
+  <div class="steps">
+    <section class="step"><span class="k">Step 1</span><h3>Connect</h3><p>Link the tools your team already uses.</p></section>
+    <section class="step"><span class="k">Step 2</span><h3>Shape</h3><p>Pick the numbers that matter each week.</p></section>
+    <section class="step"><span class="k">Step 3</span><h3>Highlight</h3><p>Lumen flags the best week for you.</p></section>
+    <section class="step"><span class="k">Step 4</span><h3>Share</h3><p>Send the report to the people who need it.</p></section>
+  </div>
+  <aside class="vis"><div class="dev">
+    <div class="dots"><i></i><i></i><i></i><i></i></div>
+    <div class="hdr"><b>Weekly report</b><span class="cnt">1 / 4</span></div>
+    <div class="chart"><i></i><i></i><i></i><i></i><i></i><i></i><span class="tag">Best week</span></div>
+    <div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Sent to 12 people</span></div>
+  </div></aside>
+</div></div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 5%,#000 94%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 5%,#000 94%,transparent 100%)}
+.d .sc::-webkit-scrollbar{display:none}
+.d .wrap{display:grid;grid-template-columns:46% 54%;grid-template-rows:1fr;height:400%}
+.d .steps{grid-column:1;grid-row:1;display:grid;grid-template-rows:repeat(4,1fr)}
+.d .step{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 5% 0 14%;opacity:.28}
+.d .step:first-child{opacity:1}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d .step h3{font:650 22px/1 var(--ml-font);letter-spacing:-.045em;color:var(--ml-ink)}
+.d .step p{font:500 10.5px/1.35 var(--ml-font);color:var(--ml-muted)}
+.d .vis{grid-column:2;grid-row:1;align-self:start;position:sticky;top:0;height:25%;display:flex;align-items:center;padding:0 8% 0 2%;background:linear-gradient(180deg,#fff,#FAF6F2)}
+.d .dev{position:relative;width:100%;height:82%;padding:11px 11px 10px;border-radius:16px;background:#fff;box-shadow:var(--ml-shadow-lg);display:flex;flex-direction:column;gap:9px}
+.d .dots{display:flex;gap:4px}
+.d .dots i{flex:1;height:4px;border-radius:4px;background:var(--ml-line)}
+.d .hdr{display:flex;justify-content:space-between;align-items:center}
+.d .hdr b{white-space:nowrap;font:650 12px/1 var(--ml-font);letter-spacing:-.02em}
+.d .cnt{font:600 8px/1 var(--ml-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ml-muted)}
+.d .chart{position:relative;flex:1;min-height:0;display:flex;align-items:flex-end;gap:6%;padding-bottom:2px}
+.d .chart i{flex:1;height:100%;border-radius:5px 5px 2px 2px;background:var(--ml-bar);transform-origin:50% 100%}
+.d .tag{position:absolute;left:46%;top:2%;padding:4px 7px;border-radius:99px;background:var(--ml-accent);color:#fff;font:600 8px/1 var(--ml-font);white-space:nowrap}
+.d .badge{position:absolute;left:10px;right:10px;bottom:10px;display:flex;align-items:center;gap:6px;padding:7px 9px;border-radius:10px;background:var(--ml-accent-soft);color:var(--ml-accent-ink);font:600 9px/1 var(--ml-font);box-shadow:0 0 0 1px var(--ml-accent-line)}
+.d .badge svg{width:12px;height:12px;flex:none}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+      // Callbacks that run after setup create their tweens through the context so ctx.revert() removes them.
+      const later = (fn) => (ctx ? ctx.add(fn) : fn());
+
+      ctx = gsap.context(() => {
+        const wrap = root.querySelector('.wrap');
+        const steps = Array.from(root.querySelectorAll('.step'));
+        const dots = Array.from(root.querySelectorAll('.dots i'));
+        const bars = Array.from(root.querySelectorAll('.chart i'));
+        const tag = root.querySelector('.tag');
+        const badge = root.querySelector('.badge');
+        const cnt = root.querySelector('.cnt');
+        const vals = [0.42, 0.68, 0.54, 0.92, 0.64, 0.8];
+
+        gsap.set(bars, { scaleY: 0.2 });
+        gsap.set(tag, { scale: 0, transformOrigin: '0 100%' });
+        gsap.set(badge, { yPercent: 160, opacity: 0 });
+
+        // The visual is sticky while the step text scrolls past; one scrubbed timeline moves it through its four states.
+        const tl = gsap.timeline({
+          defaults: { ease: 'power2.inOut' },
+          scrollTrigger: { trigger: wrap, scroller: sc, start: 'top top', end: 'bottom bottom', scrub: 0.5 },
+        });
+        tl.to(bars, { scaleY: (i) => vals[i], backgroundColor: '#FF7A3D', stagger: 0.06, duration: 0.7 }, 0)
+          .to(bars[3], { backgroundColor: '#FF4433', duration: 0.6 }, 1)
+          .to(bars.filter((b, i) => i !== 3), { opacity: 0.4, duration: 0.6 }, 1)
+          .to(tag, { scale: 1, duration: 0.5, ease: 'back.out(2)' }, 1.1)
+          .to(badge, { yPercent: 0, opacity: 1, duration: 0.7, ease: 'power3.out' }, 2.05)
+          .to({}, { duration: 0.01 }, 2.99);
+
+        // Each step lights up while it sits near the middle of the view; the indicator pills and counter follow.
+        steps.forEach((step, i) => {
+          ScrollTrigger.create({
+            trigger: step, scroller: sc, start: 'top 58%', end: 'bottom 58%',
+            onToggle: (self) => {
+              if (!self.isActive) return;
+              later(() => {
+                gsap.to(steps, { opacity: (k) => (k === i ? 1 : 0.28), duration: 0.4, overwrite: true });
+                gsap.to(dots, { backgroundColor: (k) => (k <= i ? '#FF4433' : '#EAE1D9'), duration: 0.4, overwrite: true });
+                cnt.textContent = (i + 1) + " / 4";
+              });
+            },
+          });
+        });
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 8, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a sticky product-steps section with GSAP 3 and ScrollTrigger. Two columns: on the left four step blocks, each one viewport tall with a mono eyebrow, a title and one sentence; on the right a product visual (a report card with a small bar chart, a tag and a confirmation badge) that stays in place with position: sticky; top: 0 while the steps scroll past. Wrap both in a container and drive the visual with one scrubbed timeline: gsap.timeline({ defaults: { ease: 'power2.inOut' }, scrollTrigger: { trigger: container, start: 'top top', end: 'bottom bottom', scrub: 0.5 } }). State 1 to 2: bars go from scaleY 0.2 to their real heights with stagger 0.06 and shift from grey to a light blue. State 2 to 3: one bar turns your accent colour, the others drop to opacity 0.4, and a tag pops in with scale 0 to 1 and ease 'back.out(2)'. State 3 to 4: the confirmation badge rises in with yPercent from 160 to 0. Create a ScrollTrigger per step with start 'top 58%' and end 'bottom 58%' and onToggle to fade the active step to opacity 1 and the others to 0.28, light the matching step-indicator pill, and update a '2 / 4' counter. Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) skip the scrub and show the final state.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-parallax-depth',
+    cat: 'gsap-scroll',
+    title: 'Layered parallax depth',
+    sub: 'Five layers rise at five speeds',
+    libs: ['gsap'],
+    html: `<div class="sc">
+  <section class="pin">
+    <div class="sun"></div>
+    <i class="cloud a"></i><i class="cloud b"></i>
+    <svg class="far" viewBox="0 0 400 160" preserveAspectRatio="none" aria-hidden="true"><path d="M0 112 L52 70 L104 102 L172 28 L240 98 L302 58 L400 110 V160 H0Z" fill="#BCD7FF"/></svg>
+    <header class="title"><span class="k">Depth, felt</span><h3>Every layer<br>moves on its own.</h3></header>
+    <svg class="mid" viewBox="0 0 400 160" preserveAspectRatio="none" aria-hidden="true"><path d="M0 72 C60 20 120 64 190 42 S320 10 400 62 V160 H0Z" fill="#7FB0FF"/></svg>
+    <div class="card k1"><i></i><i></i><i></i></div>
+    <div class="card k2"><i></i><i></i><i></i></div>
+    <div class="card k3"><i></i><i></i><i></i></div>
+    <svg class="front" viewBox="0 0 400 160" preserveAspectRatio="none" aria-hidden="true"><path d="M0 60 C80 8 160 74 250 36 S360 18 400 50 V160 H0Z" fill="#FF4433"/></svg>
+  </section>
+</div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;}
+.d .sc::-webkit-scrollbar{display:none}
+.d .pin{position:relative;height:100%;overflow:hidden;background:linear-gradient(180deg,#FFB8A3 0%,#FFEFEA 55%,#F4F9FF 100%)}
+.d .sun{position:absolute;right:16%;top:16%;width:20%;aspect-ratio:1;border-radius:50%;background:linear-gradient(180deg,#fff,#E2EEFF);box-shadow:0 0 0 12px rgba(255,255,255,.32)}
+.d .cloud{position:absolute;height:12px;border-radius:99px;background:rgba(255,255,255,.85)}
+.d .cloud.a{left:6%;top:30%;width:26%}
+.d .cloud.b{right:6%;top:44%;width:20%;height:10px}
+.d svg{position:absolute;left:-2%;width:104%;display:block}
+.d .far{top:40%;height:72%}
+.d .mid{top:58%;height:70%}
+.d .front{top:76%;height:68%}
+.d .title{position:absolute;left:8%;top:10%}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent-ink)}
+.d h3{margin-top:7px;font:650 22px/1.04 var(--ml-font);letter-spacing:-.045em;color:var(--ml-ink)}
+.d .card{position:absolute;width:26%;aspect-ratio:1.35;padding:7px;border-radius:10px;background:#fff;box-shadow:var(--ml-shadow-lg);display:flex;flex-direction:column;gap:4px;justify-content:center}
+.d .card i{height:5px;border-radius:5px;background:var(--ml-bar)}
+.d .card i:first-child{width:55%;background:var(--ml-accent)}
+.d .k1{left:10%;top:66%}
+.d .k2{right:8%;top:56%;width:22%}
+.d .k3{left:42%;top:84%;width:24%}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+
+      ctx = gsap.context(() => {
+        const pin = root.querySelector('.pin');
+        const H = () => sc.clientHeight;
+        const tl = gsap.timeline({
+          defaults: { ease: 'none', duration: 1 },
+          scrollTrigger: { trigger: pin, scroller: sc, start: 'top top', end: () => '+=' + sc.clientHeight * 1.6, pin: true, scrub: 0.8, invalidateOnRefresh: true },
+        });
+        // Each layer travels a different distance over the same scroll range: far = small, near = large.
+        const layers = [
+          ['.sun', 0.3], ['.cloud.a', 0.07], ['.cloud.b', 0.12], ['.far', 0.1], ['.mid', 0.24],
+          ['.front', 0.42], ['.k1', 0.5], ['.k2', 0.62], ['.k3', 0.4],
+        ];
+        layers.forEach(([sel, f]) => tl.to(root.querySelector(sel), { y: () => -H() * f }, 0));
+        tl.to(root.querySelector('.sun'), { scale: 1.2 }, 0)
+          .to(root.querySelector('.cloud.a'), { x: () => sc.clientWidth * 0.12 }, 0)
+          .to(root.querySelector('.cloud.b'), { x: () => -sc.clientWidth * 0.1 }, 0)
+          .to(root.querySelector('.title'), { opacity: 0, y: () => -H() * 0.12, duration: 0.4 }, 0.2);
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 7, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a layered parallax scene with GSAP 3 and ScrollTrigger. A full-viewport section is pinned for about 1.6 viewport heights. Inside it stack five depth layers, back to front: a sun disc, soft clouds, a far mountain silhouette, a headline, mid hills, three floating UI cards, and a near foreground hill. Use inline SVG paths with preserveAspectRatio 'none' for the hills in a lightening-to-darkening blue ramp (far is palest, near is the accent colour) so depth reads without shadows. Create one gsap.timeline with defaults { ease: 'none', duration: 1 } and scrollTrigger { trigger: section, start: 'top top', end: () => '+=' + innerHeight * 1.6, pin: true, scrub: 0.8, invalidateOnRefresh: true }. Add one tween per layer at position 0 with y: () => -innerHeight * factor and factors that grow toward the viewer: clouds 0.07 to 0.12, far hills 0.1, mid hills 0.24, near hill 0.42, cards 0.4 to 0.62, sun 0.3 with scale 1.2. Drift the clouds sideways in opposite directions with x. Fade the headline out early (position 0.2). Only animate transform and opacity. Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) show the first composition without the pin.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-scroll-counters',
+    cat: 'gsap-scroll',
+    title: 'Scroll-tied counters',
+    sub: 'Stats count up as you scroll',
+    libs: ['gsap'],
+    html: `<div class="sc">
+  <section class="pin">
+    <header class="top"><span class="k">By the numbers</span><h3>Quietly doing<br>the heavy lifting.</h3></header>
+    <div class="grid">
+      <div class="st" data-to="12480"><div class="row"><b class="num">0</b></div><span class="lab">Teams onboarded</span><i class="meter"><u></u></i></div>
+      <div class="st" data-to="38200"><div class="row"><b class="num">0</b><small>h</small></div><span class="lab">Hours saved</span><i class="meter"><u></u></i></div>
+      <div class="st" data-to="99"><div class="row"><b class="num">0</b><small>%</small></div><span class="lab">Customer score</span><i class="meter"><u></u></i></div>
+      <div class="st" data-to="14"><div class="row"><b class="num">0</b><small>min</small></div><span class="lab">Median setup</span><i class="meter"><u></u></i></div>
+    </div>
+  </section>
+</div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;}
+.d .sc::-webkit-scrollbar{display:none}
+.d .pin{position:relative;height:100%;overflow:hidden;background:linear-gradient(180deg,#fff 0%,#EEF4FF 100%)}
+.d .top{position:absolute;left:8%;right:8%;top:7%}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d h3{margin-top:7px;font:650 20px/1.04 var(--ml-font);letter-spacing:-.04em;color:var(--ml-ink)}
+.d .grid{position:absolute;left:8%;right:8%;top:38%;bottom:7%;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px}
+.d .st{padding:10px 11px;border-radius:14px;background:#fff;box-shadow:var(--ml-shadow);display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+.d .row{display:flex;align-items:baseline;gap:3px}
+.d .num{font:650 22px/1 var(--ml-font);letter-spacing:-.05em;color:var(--ml-accent-ink);font-variant-numeric:tabular-nums}
+.d .row small{font:600 10px/1 var(--ml-font);color:var(--ml-muted)}
+.d .lab{font:500 9.5px/1.2 var(--ml-font);color:var(--ml-muted)}
+.d .meter{display:block;height:3px;border-radius:3px;background:var(--ml-line);overflow:hidden}
+.d .meter u{display:block;height:100%;border-radius:3px;background:var(--ml-accent);transform-origin:0 50%;transform:scaleX(0)}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+
+      ctx = gsap.context(() => {
+        const pin = root.querySelector('.pin');
+        const stats = Array.from(root.querySelectorAll('.st'));
+        const fills = [0.78, 0.92, 0.99, 0.4];
+        const tl = gsap.timeline({
+          scrollTrigger: { trigger: pin, scroller: sc, start: 'top top', end: () => '+=' + sc.clientHeight * 1.4, pin: true, scrub: 0.6, invalidateOnRefresh: true },
+        });
+        // Each stat counts a plain object toward its target; snap rounds to whole numbers while scrubbing.
+        stats.forEach((el, i) => {
+          const num = el.querySelector('.num');
+          const o = { v: 0 };
+          tl.to(o, {
+            v: +el.dataset.to, snap: { v: 1 }, ease: 'none', duration: 1.2,
+            onUpdate: () => { num.textContent = Math.round(o.v).toLocaleString('en-US'); },
+          }, i * 0.22);
+          tl.to(el.querySelector('.meter u'), { scaleX: fills[i], ease: 'none', duration: 1.2 }, i * 0.22);
+        });
+        tl.to({}, { duration: 0.3 });
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 7, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build scroll-tied stat counters with GSAP 3 and ScrollTrigger. Pin a stats section for about 1.4 viewport heights and make the numbers count up with the scrollbar instead of on a timer, so scrolling back counts them down. Markup: a headline, then a 2 by 2 grid of stat cards, each with a large tabular-nums figure, a small unit, a label and a thin meter bar. Create one gsap.timeline with scrollTrigger { trigger: section, start: 'top top', end: () => '+=' + innerHeight * 1.4, pin: true, scrub: 0.6, invalidateOnRefresh: true }. For each stat make a plain object const o = { v: 0 } and add tl.to(o, { v: target, snap: { v: 1 }, ease: 'none', duration: 1.2, onUpdate: () => { el.textContent = Math.round(o.v).toLocaleString('en-US'); } }, i * 0.22), so the stats start 0.22 apart and every shown value is a whole number. In the same position scale the meter fill with scaleX to its share (transform-origin left) and ease 'none'. Use font-variant-numeric: tabular-nums so digits do not jitter. Keep the real final numbers in the markup text or an aria-label for screen readers, and set aria-live off. Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) write the final numbers directly and skip the pin.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-clip-reveal',
+    cat: 'gsap-scroll',
+    title: 'Clip-path image reveal',
+    sub: 'An image unmasks as it scrolls in',
+    libs: ['gsap'],
+    html: `<div class="sc"><main class="page">
+  <span class="k">Field notes</span>
+  <h3>The quiet hour.</h3>
+  <p class="lead">We followed the light for one week, from first glow to last.</p>
+  <figure class="fig">
+    <div class="img">
+      <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs><linearGradient id="clr-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0A3C9A"/><stop offset=".5" stop-color="#3F8BF2"/><stop offset="1" stop-color="#FFF0ED"/></linearGradient></defs>
+        <rect width="400" height="300" fill="url(#clr-sky)"/>
+        <circle cx="112" cy="96" r="22" fill="#F4F9FF"/>
+        <circle cx="120" cy="92" r="20" fill="#2E73DC"/>
+        <path d="M0 190 L70 150 L130 178 L210 120 L290 176 L350 148 L400 176 V300 H0Z" fill="#8DB8FF"/>
+        <path d="M0 226 L90 188 L170 222 L250 180 L330 224 L400 200 V300 H0Z" fill="#3D84F0"/>
+        <path d="M0 300 V262 C90 246 170 270 260 254 S360 250 400 258 V300 Z" fill="#0A4FC4"/>
+        <path d="M60 280 H150 M200 288 H330 M110 294 H190" stroke="#8DB8FF" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+      </svg>
+    </div>
+    <figcaption class="cap"><b>Plate 07</b><span>Morning ridge, 6:42 am</span></figcaption>
+  </figure>
+  <p class="body">Colour arrives first, then edges. By seven the whole valley has a shape.</p>
+</main></div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 90%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 90%,transparent 100%)}
+.d .sc::-webkit-scrollbar{display:none}
+.d{background:#fff}
+.d .page{padding:11% 9% 22%}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d h3{margin-top:8px;font:650 26px/1.02 var(--ml-font);letter-spacing:-.045em;color:var(--ml-ink)}
+.d .lead{margin-top:8px;font:500 11px/1.4 var(--ml-font);color:var(--ml-muted);max-width:86%}
+.d .fig{margin-top:16px}
+.d .img{aspect-ratio:4/3;overflow:hidden;border-radius:12px;box-shadow:var(--ml-shadow-lg);clip-path:inset(40% 36% 40% 36% round 22px)}
+.d .img svg{display:block;width:100%;height:100%}
+.d .cap{margin-top:9px;display:flex;justify-content:space-between;font:600 9px/1 var(--ml-mono);letter-spacing:.06em;text-transform:uppercase}
+.d .cap b{color:var(--ml-ink)}
+.d .cap span{color:var(--ml-muted)}
+.d .body{margin-top:22px;font:600 15px/1.2 var(--ml-font);letter-spacing:-.03em;color:var(--ml-ink)}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+
+      ctx = gsap.context(() => {
+        const fig = root.querySelector('.fig');
+        const img = root.querySelector('.img');
+        const art = img.querySelector('svg');
+        const cap = root.querySelector('.cap');
+        gsap.set(cap, { opacity: 0, y: 14 });
+        const tl = gsap.timeline({
+          scrollTrigger: { trigger: fig, scroller: sc, start: 'top 92%', end: 'top 22%', scrub: 0.6 },
+        });
+        // The mask opens from a small centred window to the full frame while the picture settles back from a zoom.
+        tl.fromTo(img, { clipPath: 'inset(40% 36% 40% 36% round 22px)' }, { clipPath: 'inset(0% 0% 0% 0% round 12px)', duration: 1, ease: 'power2.inOut' }, 0)
+          .fromTo(art, { scale: 1.35 }, { scale: 1, duration: 1, ease: 'power2.inOut' }, 0)
+          .to(cap, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' }, 0.75);
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 7, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a scroll-scrubbed clip-path image reveal with GSAP 3 and ScrollTrigger inside an editorial article layout (eyebrow, headline, lead paragraph, then one wide figure with a caption). Wrap the picture in a div with overflow hidden and border-radius and set it to start as a small centred window: clip-path inset(40% 36% 40% 36% round 22px). Create one gsap.timeline with scrollTrigger { trigger: figure, start: 'top 92%', end: 'top 22%', scrub: 0.6 }. Tween the picture box with fromTo to clipPath 'inset(0% 0% 0% 0% round 12px)' (duration 1, ease 'power2.inOut'), and at the same position tween the image inside it fromTo scale 1.35 to 1 so the photo settles as the mask opens. Put the caption outside the clipped box, start it at opacity 0 and y 14, and add .to(caption, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' }, 0.75) so it follows once the frame is nearly open. Both clip-path values must use the same function and unit structure so GSAP can interpolate them. Add real alt text on the image. Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) show the open frame and caption immediately.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-split-converge',
+    cat: 'gsap-scroll',
+    title: 'Converging split headline',
+    sub: 'Two halves slide in and lock together',
+    libs: ['gsap'],
+    html: `<div class="sc">
+  <section class="pin">
+    <span class="k">Brand system</span>
+    <h3 class="word" aria-label="Seamless"><span class="sz" aria-hidden="true">Seamless</span><b class="up" aria-hidden="true">Seamless</b><b class="dn" aria-hidden="true">Seamless</b><i class="cut"></i></h3>
+    <p class="sub">One system. Zero seams.</p>
+  </section>
+</div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;}
+.d .sc::-webkit-scrollbar{display:none}
+.d .pin{position:relative;height:100%;overflow:hidden;padding:0 8%;display:flex;flex-direction:column;justify-content:center;gap:12px;background:linear-gradient(180deg,#fff,#F1F6FF)}
+.d .pin::before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--ml-line) 1px,transparent 1px),linear-gradient(90deg,var(--ml-line) 1px,transparent 1px);background-size:26px 26px;opacity:.55;-webkit-mask-image:radial-gradient(ellipse at 50% 50%,#000 20%,transparent 75%);mask-image:radial-gradient(ellipse at 50% 50%,#000 20%,transparent 75%)}
+.d .k{position:absolute;left:8%;top:8%;font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d .word{position:relative;align-self:flex-start;font:700 46px/1 var(--ml-font);letter-spacing:-.055em;color:var(--ml-ink)}
+.d .word span{visibility:hidden}
+.d .word b{position:absolute;left:0;top:0;white-space:nowrap;font:inherit}
+.d .word .up{clip-path:inset(0 0 50% 0)}
+.d .word .dn{clip-path:inset(50% 0 0 0);color:var(--ml-accent)}
+.d .cut{position:absolute;left:-3%;right:-3%;top:50%;height:2px;margin-top:-1px;background:var(--ml-accent);transform-origin:0 50%}
+.d .sub{position:relative;font:500 12px/1.2 var(--ml-font);color:var(--ml-muted)}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+
+      ctx = gsap.context(() => {
+        const up = root.querySelector('.up');
+        const dn = root.querySelector('.dn');
+        const cut = root.querySelector('.cut');
+        const sub = root.querySelector('.sub');
+        gsap.set(cut, { scaleX: 0 });
+        gsap.set(sub, { opacity: 0, y: 10 });
+        const tl = gsap.timeline({
+          scrollTrigger: { trigger: root.querySelector('.pin'), scroller: sc, start: 'top top', end: () => '+=' + sc.clientHeight * 1.2, pin: true, scrub: 0.5, invalidateOnRefresh: true },
+        });
+        // The top half comes from the left, the bottom half from the right; a thin line flashes where they lock.
+        tl.fromTo(up, { xPercent: -40, yPercent: -12 }, { xPercent: 0, yPercent: 0, duration: 1, ease: 'power3.out' }, 0)
+          .fromTo(dn, { xPercent: 40, yPercent: 12 }, { xPercent: 0, yPercent: 0, duration: 1, ease: 'power3.out' }, 0)
+          .to(cut, { scaleX: 1, duration: 0.25, ease: 'power2.out' }, 0.85)
+          .to(cut, { opacity: 0, duration: 0.3 }, 1.15)
+          .to(sub, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, 1)
+          .to({}, { duration: 0.4 });
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 6, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a converging split headline with GSAP 3 and ScrollTrigger. One large word is drawn twice, stacked in the same spot: the top copy is clipped to its upper half with clip-path inset(0 0 50% 0) and the bottom copy to its lower half with clip-path inset(50% 0 0 0), the lower half in your accent colour. Mark both copies aria-hidden and give the heading element an aria-label with the real word; keep an invisible third copy in normal flow so the heading keeps its size. Pin the section for about 1.2 viewport heights and create one gsap.timeline with scrollTrigger { trigger: section, start: 'top top', end: () => '+=' + innerHeight * 1.2, pin: true, scrub: 0.5, invalidateOnRefresh: true }. Tween the top copy fromTo xPercent -40 and yPercent -12 to 0 and the bottom copy fromTo xPercent 40 and yPercent 12 to 0, both duration 1 and ease 'power3.out', so the word starts cracked apart and the halves lock into one word. At 0.85 scale a thin accent line (transform-origin left) from 0 to 1 across the cut, fade it out at 1.15, then raise a one-line subtitle from y 10 and opacity 0 at position 1. Add a faint masked grid behind it for texture. Keep the headline at least 46px so the halves read. Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) render the joined word with no animation.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-snap-sections',
+    cat: 'gsap-scroll',
+    title: 'Snapping sections with nav',
+    sub: 'Scroll settles on each section',
+    libs: ['gsap'],
+    html: `<div class="sc"><div class="secs">
+  <section class="sec s1"><span class="k">01</span><h3>Discover</h3><p>Listen first. Map what people really do.</p><div class="vz"><i style="width:84%"></i><i style="width:58%"></i><i style="width:70%"></i></div></section>
+  <section class="sec s2"><span class="k">02</span><h3>Design</h3><p>Sketch the flow, then make it feel right.</p><div class="vz tiles"><i></i><i></i><i></i><i></i></div></section>
+  <section class="sec s3"><span class="k">03</span><h3>Build</h3><p>Small steps, shipped behind a switch.</p><div class="vz code"><i style="width:40%"></i><i style="width:72%"></i><i style="width:55%"></i></div></section>
+  <section class="sec s4"><span class="k">04</span><h3>Launch</h3><p>Go live and watch the first hour.</p><div class="vz go"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 15c-1.5 1.3-2 5-2 5s3.7-.5 5-2"/><path d="m12 15-3-3a22 22 0 0 1 2-3.9A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22 22 0 0 1-4 2Z"/><path d="M9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5"/></svg></span></div></section>
+</div></div>
+<div class="lab"><b>01</b><span>Discover</span></div>
+<nav class="nav" aria-hidden="true"><i></i><i></i><i></i><i></i></nav>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;}
+.d .sc::-webkit-scrollbar{display:none}
+.d .secs{height:400%;display:grid;grid-template-rows:repeat(4,1fr)}
+.d .sec{min-height:0;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:8% 20% 0 9%;position:relative}
+.d .s1{background:#fff}
+.d .s2{background:#EEF4FF}
+.d .s3{background:#DCE9FF}
+.d .s4{background:linear-gradient(135deg,#FF4433,#FF7A3D);color:#fff}
+.d .k{font:600 10px/1 var(--ml-mono);letter-spacing:.08em;color:var(--ml-accent)}
+.d .s4 .k{color:rgba(255,255,255,.8)}
+.d h3{font:650 30px/1 var(--ml-font);letter-spacing:-.05em}
+.d .sec p{font:500 11px/1.35 var(--ml-font);color:var(--ml-muted);max-width:90%}
+.d .s4 p{color:rgba(255,255,255,.85)}
+.d .vz{margin-top:8px;display:flex;flex-direction:column;gap:5px;width:70%}
+.d .vz i{height:7px;border-radius:7px;background:var(--ml-accent-line)}
+.d .vz.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.d .vz.tiles i{height:24px;border-radius:7px;background:#fff;box-shadow:var(--ml-shadow)}
+.d .vz.tiles i:nth-child(2){background:var(--ml-accent)}
+.d .vz.code i{background:rgba(255,68,51,.35)}
+.d .vz.code i:nth-child(2){background:var(--ml-accent)}
+.d .vz.go span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#fff;color:var(--ml-accent)}
+.d .vz.go svg{width:16px;height:16px}
+.d .lab{position:absolute;left:9%;top:6%;display:flex;gap:6px;align-items:center;padding:5px 10px 5px 8px;border-radius:99px;background:rgba(255,255,255,.88);box-shadow:var(--ml-shadow);font:600 9px/1 var(--ml-mono);letter-spacing:.06em;text-transform:uppercase;pointer-events:none}
+.d .lab b{color:var(--ml-accent)}
+.d .nav{position:absolute;right:9px;top:50%;margin-top:-26px;display:flex;flex-direction:column;align-items:center;gap:7px;padding:8px 5px;border-radius:99px;background:rgba(255,255,255,.88);box-shadow:var(--ml-shadow);pointer-events:none}
+.d .nav i{width:6px;height:6px;border-radius:50%;background:var(--ml-accent-line)}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+      // Callbacks that run after setup create their tweens through the context so ctx.revert() removes them.
+      const later = (fn) => (ctx ? ctx.add(fn) : fn());
+
+      ctx = gsap.context(() => {
+        const secs = Array.from(root.querySelectorAll('.sec'));
+        const dots = Array.from(root.querySelectorAll('.nav i'));
+        const labNum = root.querySelector('.lab b');
+        const labName = root.querySelector('.lab span');
+        const names = ['Discover', 'Design', 'Build', 'Launch'];
+        const last = secs.length - 1;
+        let cur = -1;
+
+        gsap.set(secs.slice(1).flatMap((s) => Array.from(s.children)), { opacity: 0, y: 18 });
+        gsap.set(dots[0], { scaleY: 2.8, backgroundColor: '#FF4433' });
+
+        const go = (i) => {
+          if (i === cur) return;
+          const first = cur < 0;
+          cur = i;
+          later(() => {
+            gsap.to(dots, { scaleY: (k) => (k === i ? 2.8 : 1), backgroundColor: (k) => (k === i ? '#FF4433' : '#FFD0CA'), duration: 0.4, ease: 'power3.out', overwrite: true });
+            gsap.fromTo([labNum, labName], { y: first ? 0 : 7, opacity: first ? 1 : 0 }, { y: 0, opacity: 1, duration: 0.35, ease: 'power2.out', stagger: 0.04, overwrite: true });
+            labNum.textContent = String(i + 1).padStart(2, '0');
+            labName.textContent = names[i];
+            if (!first) gsap.fromTo(Array.from(secs[i].children), { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.07, ease: 'power3.out', overwrite: true });
+          });
+        };
+
+        // Snap every 1/3 of the progress (one section) after the scroll settles; the nav follows the nearest section.
+        ScrollTrigger.create({
+          trigger: root.querySelector('.secs'), scroller: sc, start: 'top top', end: 'bottom bottom',
+          snap: { snapTo: 1 / last, directional: false, duration: { min: 0.25, max: 0.7 }, delay: 0.08, ease: 'power2.inOut' },
+          onUpdate: (self) => go(Math.round(self.progress * last)),
+        });
+        go(0);
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        // Hop section to section with holds, like a visitor flicking the wheel; the snap lands each stop.
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.5, delay: 1.4 });
+        [1, 2, 3].forEach((k) => auto.to(st, { p: k / 3, duration: 0.9, ease: 'power3.inOut', onUpdate: apply }, '+=1.3'));
+        auto.to(st, { p: 0, duration: 1.4, ease: 'power3.inOut', onUpdate: apply }, '+=1.3');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build snapping full-height sections with a progress nav using GSAP 3 and ScrollTrigger. Four sections, each one viewport tall with its own tint (white, pale blue, mid blue, then your accent gradient), a mono number, a large title, one sentence and a small visual. Add a pill label at the top left showing the current number and name, and a vertical dot nav at the right on a white pill so it stays legible on every background. Create ScrollTrigger.create({ trigger: sectionsWrapper, start: 'top top', end: 'bottom bottom', snap: { snapTo: 1 / (sections - 1), directional: false, duration: { min: 0.25, max: 0.7 }, delay: 0.08, ease: 'power2.inOut' }, onUpdate: (self) => setActive(Math.round(self.progress * (sections - 1))) }). In setActive tween the active dot to scaleY 2.8 and your accent colour and the others back to scaleY 1 and a pale blue, swap the label text with a short y 7 to 0 and opacity fade, and bring the new section's children in with fromTo y 18 and opacity 0 to 1, stagger 0.07, ease 'power3.out', overwrite true. Hide the children of sections after the first with gsap.set. Make the dots real buttons that call section.scrollIntoView({ behavior: 'smooth' }). Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) drop the snap and the entrance tweens.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-before-after',
+    cat: 'gsap-scroll',
+    title: 'Before and after wipe',
+    sub: 'A divider wipes one design into another',
+    libs: ['gsap'],
+    html: `<div class="sc">
+  <section class="pin">
+    <div class="pane before">
+      <div class="nv"><b>ACME SHOP</b><i></i><i></i><i></i><i></i></div>
+      <div class="hr">
+        <div class="tx"><h4>Welcome to our website</h4><u></u><u></u><u></u><u></u><span class="bt">Click here</span></div>
+        <div class="im"></div>
+      </div>
+      <div class="cr"><i></i><i></i><i></i></div>
+      <span class="tg">Before</span>
+    </div>
+    <div class="pane after">
+      <div class="nv"><b>Acme</b><i></i><i></i><i></i></div>
+      <div class="hr">
+        <div class="tx"><h4>Sell more,<br>stress less.</h4><p>One tidy shop, ready today.</p><span class="bt">Start free</span></div>
+        <div class="im"><s></s></div>
+      </div>
+      <div class="cr"><i></i><i></i><i></i></div>
+      <span class="tg">After</span>
+    </div>
+    <div class="handle"><span class="ln"></span><span class="knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6-6 6 6 6M15 6l6 6-6 6"/></svg></span></div>
+  </section>
+</div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;}
+.d .sc::-webkit-scrollbar{display:none}
+.d .pin{position:relative;height:100%;overflow:hidden;background:#fff}
+.d .pane{position:absolute;inset:0;padding:5% 7%;display:flex;flex-direction:column;gap:9%}
+.d .nv{display:flex;align-items:center;gap:7px;height:16px}
+.d .nv b{margin-right:auto;font:700 10px/1 var(--ml-font)}
+.d .nv i{width:20px;height:5px}
+.d .hr{flex:1;min-height:0;display:grid;grid-template-columns:1.15fr 1fr;gap:12px;align-items:center}
+.d .tx{display:flex;flex-direction:column;gap:6px}
+.d .im{height:78%}
+.d .cr{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;height:22%}
+.d .tg{position:absolute;top:17%;padding:4px 8px;font:600 8px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase}
+.d .before{background:#E8EBF0;color:#59606C}
+.d .before .nv i{background:#B8C0CC;border:1px solid #8E97A5}
+.d .before h4{font:700 14px/1.1 var(--ml-font);text-decoration:underline;color:#434A56}
+.d .before u{display:block;height:4px;background:#B8C0CC;text-decoration:none}
+.d .before u:nth-of-type(2){width:88%}
+.d .before u:nth-of-type(3){width:94%}
+.d .before u:nth-of-type(4){width:60%}
+.d .before .bt{align-self:flex-start;padding:5px 9px;border:2px solid #7B8494;background:#D3D8E0;font:700 9px/1 var(--ml-font)}
+.d .before .im{background:repeating-linear-gradient(45deg,#CDD3DC 0 6px,#DDE1E8 6px 12px);border:2px solid #9AA3B0}
+.d .before .cr i{background:#D3D8E0;border:2px solid #9AA3B0}
+.d .before .tg{right:7%;background:#C5CBD5;color:#4B5260}
+.d .after{background:linear-gradient(180deg,#fff,#F1F6FF);color:var(--ml-ink);clip-path:inset(0% 80% 0% 0%)}
+.d .after .nv i{background:var(--ml-bar);border-radius:5px}
+.d .after h4{font:650 20px/1.02 var(--ml-font);letter-spacing:-.045em}
+.d .after p{font:500 10px/1.3 var(--ml-font);color:var(--ml-muted)}
+.d .after .bt{align-self:flex-start;padding:7px 13px;border-radius:99px;background:var(--ml-accent);color:#fff;font:600 10px/1 var(--ml-font)}
+.d .after .im{position:relative;border-radius:14px;background:linear-gradient(160deg,#FFDCD6,#FF7A3D);box-shadow:var(--ml-shadow);overflow:hidden}
+.d .after .im s{position:absolute;left:18%;top:20%;width:28%;aspect-ratio:1;border-radius:50%;background:#fff}
+.d .after .cr i{border-radius:12px;background:#fff;box-shadow:var(--ml-shadow)}
+.d .after .tg{left:7%;border-radius:99px;background:var(--ml-accent);color:#fff}
+.d .before .tg{border-radius:0}
+.d .handle{position:absolute;left:0;top:0;bottom:0;width:0}
+.d .ln{position:absolute;left:-1px;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 0 1px rgba(255,68,51,.35)}
+.d .knob{position:absolute;left:-14px;top:50%;margin-top:-14px;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:var(--ml-shadow-lg);display:grid;place-items:center;color:var(--ml-accent)}
+.d .knob svg{width:14px;height:14px}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+
+      ctx = gsap.context(() => {
+        const pin = root.querySelector('.pin');
+        const after = root.querySelector('.after');
+        const handle = root.querySelector('.handle');
+        const W = () => pin.clientWidth;
+        const tl = gsap.timeline({
+          defaults: { ease: 'none', duration: 1 },
+          scrollTrigger: { trigger: pin, scroller: sc, start: 'top top', end: () => '+=' + sc.clientHeight * 1.2, pin: true, scrub: 0.5, invalidateOnRefresh: true },
+        });
+        // One range drives both the clip-path edge and the handle, so the divider always sits on the wipe edge.
+        tl.fromTo(after, { clipPath: 'inset(0% 80% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)' }, 0)
+          .fromTo(handle, { x: () => W() * 0.2 }, { x: () => W() }, 0)
+          .to(handle, { opacity: 0, duration: 0.12 }, 0.88)
+          .to({}, { duration: 0.2 });
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 7, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a scroll-driven before and after wipe with GSAP 3 and ScrollTrigger. Stack two full-size panes in one pinned section: a plain, cramped version of a page underneath (flat greys, hard borders, tiny text) and the polished version on top with the same layout, each with a small label pill. Start the top pane clipped to a thin strip at the left with clip-path inset(0% 80% 0% 0%). Pin the section for about 1.2 viewport heights and create one gsap.timeline with defaults { ease: 'none', duration: 1 } and scrollTrigger { trigger: section, start: 'top top', end: () => '+=' + innerHeight * 1.2, pin: true, scrub: 0.5, invalidateOnRefresh: true }. Tween the top pane fromTo clipPath inset(0% 80% 0% 0%) to inset(0% 0% 0% 0%), and at position 0 tween a zero-width divider element (a 2px white line with a 28px round knob holding a chevrons icon) fromTo x: () => width * 0.2 to x: () => width, so the divider always sits on the wipe edge. Fade the divider out at 0.88. Use function-based values so invalidateOnRefresh re-measures on resize. Keep the same copy structure in both panes so the eye compares design, not content. Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) replace the scrub with a draggable or keyboard-controlled divider.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-velocity-marquee',
+    cat: 'gsap-scroll',
+    title: 'Velocity marquee',
+    sub: 'Scroll speed and direction steer the text',
+    libs: ['gsap'],
+    html: `<div class="sc"><div class="page">
+  <header class="nav"><b>Pulse</b><span>Studio</span></header>
+  <section class="hero"><span class="k">Motion studio</span><h3>We make<br>things move.</h3></section>
+  <div class="mq r1"><div class="trk"><span>Design</span><span>Build</span><span>Ship</span><span>Repeat</span><span>Grow</span><span>Design</span><span>Build</span><span>Ship</span><span>Repeat</span><span>Grow</span></div></div>
+  <p class="mid">Scroll faster and the words speed up. Scroll back and they turn around.</p>
+  <div class="mq r2"><div class="trk"><span>Brand</span><span>Web</span><span>Product</span><span>Film</span><span>Type</span><span>Brand</span><span>Web</span><span>Product</span><span>Film</span><span>Type</span></div></div>
+  <div class="mq r3"><div class="trk"><span>Open for projects</span><span>Open for projects</span><span>Open for projects</span><span>Open for projects</span><span>Open for projects</span><span>Open for projects</span></div></div>
+  <section class="work"><div class="w"><i></i><b>Atlas</b></div><div class="w"><i></i><b>Northlight</b></div><div class="w"><i></i><b>Fernhill</b></div></section>
+</div></div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;}
+.d .sc::-webkit-scrollbar{display:none}
+.d .page{padding:0 0 18%}
+.d .nav{display:flex;justify-content:space-between;align-items:center;padding:14px 9%}
+.d .nav b{font:700 13px/1 var(--ml-font);letter-spacing:-.02em}
+.d .nav span{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-muted)}
+.d .hero{padding:6% 9% 7%}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d h3{margin-top:8px;font:650 26px/1.02 var(--ml-font);letter-spacing:-.045em}
+.d .mq{overflow:hidden;white-space:nowrap}
+.d .trk{display:inline-flex;will-change:transform}
+.d .mq span{font:700 40px/1.15 var(--ml-font);letter-spacing:-.05em;color:var(--ml-ink)}
+.d .mq span::after{content:"";display:inline-block;width:.2em;height:.2em;margin:0 .4em .12em;background:var(--ml-accent);transform:rotate(45deg)}
+.d .r2 span{color:var(--ml-accent)}
+.d .r3{margin:12px 0;background:var(--ml-accent);padding:7px 0}
+.d .r3 span{font:600 14px/1 var(--ml-font);letter-spacing:-.01em;color:#fff}
+.d .r3 span::after{background:#fff;opacity:.7}
+.d .mid{padding:10px 9%;font:500 11px/1.4 var(--ml-font);color:var(--ml-muted)}
+.d .work{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6% 9% 0}
+.d .w{padding:8px;border-radius:12px;background:#fff;box-shadow:var(--ml-shadow);display:flex;flex-direction:column;gap:7px}
+.d .w i{display:block;aspect-ratio:1.1;border-radius:8px;background:linear-gradient(160deg,#FFF2ED,#7FB0FF)}
+.d .w:nth-child(2) i{background:linear-gradient(200deg,#FFDCD6,#FF4433)}
+.d .w b{font:600 10px/1 var(--ml-font);letter-spacing:-.01em}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+
+      ctx = gsap.context(() => {
+        const page = root.querySelector('.page');
+        const rows = Array.from(root.querySelectorAll('.mq'));
+        // Every row loops forever (half its width = one full set); rows 1 and 3 travel left, row 2 right.
+        const tws = rows.map((row, i) => gsap.fromTo(row.querySelector('.trk'),
+          { xPercent: i === 1 ? -50 : 0 }, { xPercent: i === 1 ? 0 : -50, duration: 15 - i * 2, ease: 'none', repeat: -1 }));
+
+        // One smoothed value drives all three rows; it eases back to the idle speed shortly after scrolling stops.
+        const m = { ts: 1, sk: 0 };
+        const steer = () => { tws.forEach((tw) => tw.timeScale(m.ts)); gsap.set(rows, { skewX: m.sk }); };
+        const toScale = gsap.quickTo(m, 'ts', { duration: 0.35, ease: 'power3.out', onUpdate: steer });
+        const toSkew = gsap.quickTo(m, 'sk', { duration: 0.5, ease: 'power3.out', onUpdate: steer });
+        const idle = gsap.delayedCall(0.15, () => { toScale(1); toSkew(0); }).pause();
+
+        ScrollTrigger.create({
+          trigger: page, scroller: sc, start: 'top top', end: 'bottom bottom',
+          onUpdate: (self) => {
+            const v = self.getVelocity();
+            toScale((v < 0 ? -1 : 1) * (1 + Math.min(9, Math.abs(v) / 60)));
+            toSkew(gsap.utils.clamp(-12, 12, -v / 80));
+            idle.restart(true);
+          },
+        });
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 5, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a scroll-velocity marquee with GSAP 3 and ScrollTrigger. Create three horizontal text rows (a solid headline row, an accent-coloured row, and a smaller filled band) that loop forever. In each row put the words in an inline-flex track twice as a pair of identical sets, each set wider than the viewport, and loop it with gsap.fromTo(track, { xPercent: 0 }, { xPercent: -50, duration: 15, ease: 'none', repeat: -1 }); run the middle row the other way by swapping the from and to values. Make the speed follow scrolling: create a smoothed value with const toScale = gsap.quickTo(state, 'ts', { duration: 0.35, ease: 'power3.out', onUpdate: apply }) and in apply() call timeScale(state.ts) on every row tween. In a ScrollTrigger.create({ trigger: page, start: 'top top', end: 'bottom bottom', onUpdate: (self) => ... }) read const v = self.getVelocity() and call toScale(sign(v) * (1 + Math.min(9, Math.abs(v) / 60))) so scrolling down speeds the rows up and scrolling up reverses them. Also skew each row with a second quickTo to clamp(-12, 12, -v / 80). Restart a gsap.delayedCall(0.15, () => { toScale(1); toSkew(0); }) on every update so the rows ease back to their idle drift when scrolling stops. Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) leave the rows static.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-batch-grid',
+    cat: 'gsap-scroll',
+    title: 'Batched grid reveal',
+    sub: 'Cards rise in as groups enter view',
+    libs: ['gsap'],
+    html: `<div class="sc"><div class="page">
+  <header class="hd"><div><span class="k">Spring drop</span><h3>New arrivals</h3></div><span class="cnt">8 items</span></header>
+  <div class="pills"><span class="on">All</span><span>Home</span><span>Desk</span></div>
+  <div class="grid">
+    <div class="t"><i class="a1"></i><b>Arc lamp</b><span>$48</span></div>
+    <div class="t"><i class="a2"></i><b>Fold stool</b><span>$62</span></div>
+    <div class="t"><i class="a3"></i><b>Stone cup</b><span>$18</span></div>
+    <div class="t"><i class="a4"></i><b>Linen throw</b><span>$74</span></div>
+    <div class="t"><i class="a5"></i><b>Desk mat</b><span>$29</span></div>
+    <div class="t"><i class="a6"></i><b>Brass tray</b><span>$36</span></div>
+    <div class="t"><i class="a7"></i><b>Glass carafe</b><span>$32</span></div>
+    <div class="t"><i class="a8"></i><b>Wool pouf</b><span>$85</span></div>
+  </div>
+</div></div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 90%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 90%,transparent 100%)}
+.d .sc::-webkit-scrollbar{display:none}
+.d{background:#fff}
+.d .page{position:relative;padding:0 8% 16%}
+.d .hd{display:flex;justify-content:space-between;align-items:flex-end;padding:20px 0 10px}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d h3{margin-top:6px;font:650 22px/1 var(--ml-font);letter-spacing:-.045em}
+.d .cnt{font:600 9px/1 var(--ml-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ml-muted)}
+.d .pills{display:flex;gap:5px;margin-bottom:12px}
+.d .pills span{padding:5px 10px;border-radius:99px;background:var(--ml-surface);font:600 9px/1 var(--ml-font);color:var(--ml-ink-2)}
+.d .pills .on{background:var(--ml-ink);color:#fff}
+.d .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}
+.d .t{display:flex;flex-direction:column;gap:2px}
+.d .t i{display:block;aspect-ratio:1.18;border-radius:12px;margin-bottom:5px}
+.d .t b{font:600 10.5px/1.1 var(--ml-font);letter-spacing:-.01em}
+.d .t span{font:500 10px/1 var(--ml-font);color:var(--ml-muted)}
+.d .a1{background:radial-gradient(circle at 50% 36%,#fff 0 15%,transparent 16%),linear-gradient(#FF4433,#FF4433) 50% 82%/3% 42% no-repeat,linear-gradient(160deg,#FFF2ED,#9DC3FF)}
+.d .a2{background:linear-gradient(#FF4433,#FF4433) 50% 38%/46% 9% no-repeat,linear-gradient(#FF4433,#FF4433) 34% 74%/5% 46% no-repeat,linear-gradient(#FF4433,#FF4433) 66% 74%/5% 46% no-repeat,linear-gradient(160deg,#EAF2FF,#BBD4FF)}
+.d .a3{background:radial-gradient(ellipse at 50% 56%,#fff 0 24%,transparent 25%),linear-gradient(160deg,#C9DEFF,#6FA6FF)}
+.d .a4{background:repeating-linear-gradient(90deg,rgba(255,255,255,.55) 0 4px,transparent 4px 10px),linear-gradient(160deg,#B6D1FF,#FF7A3D)}
+.d .a5{background:linear-gradient(#fff,#fff) 50% 50%/60% 52% no-repeat,linear-gradient(160deg,#DCE9FF,#A9C9FF)}
+.d .a6{background:radial-gradient(circle at 50% 50%,transparent 0 22%,#fff 23% 30%,transparent 31%),linear-gradient(160deg,#9DC3FF,#2F85FF)}
+.d .a7{background:linear-gradient(#fff,#fff) 50% 62%/30% 56% no-repeat,linear-gradient(160deg,#E3EDFF,#B0CDFF)}
+.d .a8{background:radial-gradient(circle at 50% 60%,#fff 0 28%,transparent 29%),linear-gradient(160deg,#C2D9FF,#FF4433)}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+      // Callbacks that run after setup create their tweens through the context so ctx.revert() removes them.
+      const later = (fn) => (ctx ? ctx.add(fn) : fn());
+
+      ctx = gsap.context(() => {
+        const page = root.querySelector('.page');
+        const tiles = Array.from(root.querySelectorAll('.t'));
+        // The first row is already in view; everything below waits hidden and enters in small groups.
+        const below = tiles.filter((t) => t.offsetTop > sc.clientHeight * 0.7);
+        gsap.set(below, { opacity: 0, y: 34, scale: 0.94 });
+
+        ScrollTrigger.batch(below, {
+          scroller: sc, start: 'top 90%', interval: 0.12, batchMax: 4,
+          onEnter: (batch) => later(() => gsap.to(batch, { opacity: 1, y: 0, scale: 1, stagger: 0.1, duration: 0.8, ease: 'power3.out', overwrite: true })),
+          onLeaveBack: (batch) => later(() => gsap.to(batch, { opacity: 0, y: 34, scale: 0.94, duration: 0.35, overwrite: true })),
+        });
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 7, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a batched grid reveal with GSAP 3 and ScrollTrigger.batch. A product grid of eight cards (image, name, price) in two columns on mobile and four on desktop. Hide every card that starts below the fold with gsap.set(cards, { opacity: 0, y: 34, scale: 0.94 }). Then call ScrollTrigger.batch(cards, { start: 'top 90%', interval: 0.12, batchMax: 4, onEnter: (batch) => gsap.to(batch, { opacity: 1, y: 0, scale: 1, stagger: 0.1, duration: 0.8, ease: 'power3.out', overwrite: true }), onLeaveBack: (batch) => gsap.to(batch, { opacity: 0, y: 34, scale: 0.94, duration: 0.35, overwrite: true }) }). The batch call groups every card that enters within the 0.12s interval (up to four) into one array so each row arrives as a staggered group, and onLeaveBack replays the reveal when the visitor scrolls up again. Pass scroller only if the grid lives in its own scrolling container. Draw card images with plain CSS gradients or real photos with width and height set, to avoid layout shift. Wrap in gsap.context, create tweens inside callbacks with ctx.add, and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) skip the batch and show every card.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-object-turn',
+    cat: 'gsap-scroll',
+    title: 'Scrubbed object turn',
+    sub: 'A layered device turns and comes apart',
+    libs: ['gsap'],
+    html: `<div class="sc">
+  <section class="pin">
+    <header class="top"><span class="k">Anatomy</span><h3>Inside<br>Pulse.</h3></header>
+    <ul class="leg"><li><b>01</b>Glass</li><li><b>02</b>Display</li><li><b>03</b>Board</li><li><b>04</b>Cell</li><li><b>05</b>Shell</li></ul>
+    <div class="scene"><div class="tilt"><div class="obj">
+      <i class="pl p1"></i><i class="pl p2"></i><i class="pl p3"></i><i class="pl p4"></i><i class="pl p5"></i>
+    </div></div></div>
+    <p class="cap"><span class="c1">Assembled</span><span class="c2">Exploded view</span></p>
+  </section>
+</div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;}
+.d .sc::-webkit-scrollbar{display:none}
+.d .pin{position:relative;height:100%;overflow:hidden;background:linear-gradient(180deg,#fff,#EEF4FF)}
+.d .top{position:absolute;left:8%;top:8%}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d h3{margin-top:7px;font:650 22px/1.02 var(--ml-font);letter-spacing:-.045em}
+.d .leg{position:absolute;left:8%;bottom:16%;list-style:none;display:flex;flex-direction:column;gap:5px}
+.d .leg li{display:flex;gap:7px;align-items:center;font:600 9.5px/1 var(--ml-font);color:var(--ml-ink-2)}
+.d .leg b{font:600 8px/1 var(--ml-mono);color:var(--ml-accent)}
+.d .scene{position:absolute;inset:0;perspective:900px}
+.d .tilt{position:absolute;left:50%;top:16%;width:32%;height:66%;transform-style:preserve-3d;transform:rotateX(58deg)}
+.d .obj{position:absolute;inset:0;transform-style:preserve-3d}
+.d .pl{position:absolute;inset:0;border-radius:14px;transform-style:preserve-3d;box-shadow:0 1px 2px rgba(35,15,10,.12)}
+.d .p1{background:rgba(255,255,255,.4);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.95),0 1px 2px rgba(35,15,10,.12)}
+.d .p2{background:linear-gradient(#fff,#fff) 14% 16%/46% 5% no-repeat,linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.55)) 14% 28%/72% 4% no-repeat,linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) 14% 38%/60% 4% no-repeat,linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,.22)) 14% 78%/72% 14% no-repeat,linear-gradient(160deg,#FF4433,#FF7A3D)}
+.d .p3{background:linear-gradient(#FF4433,#FF4433) 26% 30%/26% 12% no-repeat,linear-gradient(#FF4433,#FF4433) 72% 62%/18% 18% no-repeat,linear-gradient(rgba(255,68,51,.28) 1px,transparent 1px) 0 0/12px 12px,linear-gradient(90deg,rgba(255,68,51,.28) 1px,transparent 1px) 0 0/12px 12px,#DCE9FF}
+.d .p4{background:linear-gradient(#EAF2FF,#EAF2FF) 50% 50%/74% 72% no-repeat,#fff;box-shadow:inset 0 0 0 1.5px #FFD0CA,0 1px 2px rgba(35,15,10,.12)}
+.d .p5{background:linear-gradient(160deg,#FFF0ED,#8DB8FF);box-shadow:0 10px 18px rgba(10,60,160,.28)}
+.d .cap{position:absolute;right:8%;bottom:7%;font:600 8.5px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-muted)}
+.d .cap span{position:absolute;right:0;bottom:0;white-space:nowrap}
+.d .c2{color:var(--ml-accent);opacity:0}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+
+      ctx = gsap.context(() => {
+        const pin = root.querySelector('.pin');
+        const obj = root.querySelector('.obj');
+        const plates = Array.from(root.querySelectorAll('.pl'));
+        const legs = Array.from(root.querySelectorAll('.leg li'));
+        const cap1 = root.querySelector('.c1');
+        const cap2 = root.querySelector('.c2');
+        const gap = () => root.clientWidth * 0.075;
+
+        gsap.set(obj, { rotationZ: -38 });
+        gsap.set(legs, { opacity: 0, x: -10 });
+        gsap.set(plates, { z: (i) => (2 - i) * root.clientWidth * 0.012 });
+
+        // Over one pinned range the layers slide apart along z while the whole stack keeps turning.
+        const tl = gsap.timeline({
+          scrollTrigger: { trigger: pin, scroller: sc, start: 'top top', end: () => '+=' + sc.clientHeight * 1.8, pin: true, scrub: 0.6, invalidateOnRefresh: true },
+        });
+        tl.to(obj, { rotationZ: 20, duration: 2.4, ease: 'power1.inOut' }, 0)
+          .to(plates, { z: (i) => (2 - i) * gap(), duration: 1.1, ease: 'power2.inOut' }, 0)
+          .to(plates, { z: (i) => (2 - i) * gap() * 1.4, duration: 1, ease: 'power2.inOut' }, 1.4)
+          .to(legs, { opacity: 1, x: 0, stagger: 0.1, duration: 0.4, ease: 'power2.out' }, 0.8)
+          .to(cap1, { opacity: 0, duration: 0.2 }, 0.7)
+          .to(cap2, { opacity: 1, duration: 0.3 }, 0.9)
+          .to({}, { duration: 0.2 });
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 8, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a scrubbed exploded-view product turn with GSAP 3 and ScrollTrigger, using CSS 3D instead of an image sequence. Build the product from five absolutely stacked rounded plates (glass, display, circuit board, battery, shell), each drawn with CSS gradients, inside a scene with perspective 900px, then .tilt { transform: rotateX(58deg); transform-style: preserve-3d } and .obj { transform-style: preserve-3d } so the stack reads isometric; every plate also gets transform-style preserve-3d. Pin the section for about 1.8 viewport heights and create one gsap.timeline with scrollTrigger { trigger: section, start: 'top top', end: () => '+=' + innerHeight * 1.8, pin: true, scrub: 0.6, invalidateOnRefresh: true }. Tween the object rotationZ from -38 to 20 over the whole timeline with ease 'power1.inOut'. At the same time tween the plates' z with function values, z: (i) => (2 - i) * gap, from a nearly collapsed stack to an exploded one over duration 1.1, then spread them 1.4 times further at position 1.4. Fade a legend list in with stagger 0.1 once they separate and swap an 'Assembled' caption for 'Exploded view'. Size the gap from the container width so it scales. Do not put overflow, opacity, filter or clip-path on any element between the perspective parent and the plates, because they flatten the 3D. Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) show the exploded state still.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-color-shift',
+    cat: 'gsap-scroll',
+    title: 'Section colour shift',
+    sub: 'The page recolours as each section enters',
+    libs: ['gsap'],
+    html: `<div class="sc">
+  <header class="nav"><b>Hue</b><span><i></i><i></i><i></i></span></header>
+  <section class="sec"><span class="k">01 / 05</span><h3>Light as paper.</h3><p>Start from a clean page.</p></section>
+  <section class="sec"><span class="k">02 / 05</span><h3>Soft as sky.</h3><p>A little blue, a lot of air.</p></section>
+  <section class="sec"><span class="k">03 / 05</span><h3>Loud when it must.</h3><p>One bold moment per page.</p><span class="btn"><span>See it live</span></span></section>
+  <section class="sec"><span class="k">04 / 05</span><h3>Deep after dusk.</h3><p>Ink flips with the background.</p></section>
+  <section class="sec"><span class="k">05 / 05</span><h3>Clear again.</h3><p>Back to white, nothing lost.</p><span class="btn"><span>Start over</span></span></section>
+</div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;}
+.d .sc::-webkit-scrollbar{display:none}
+.d .sc{background:#fff;color:#1D1D1F;--bgc:#fff}
+.d .nav{position:sticky;top:0;z-index:2;height:42px;margin-bottom:-42px;background:var(--bgc);display:flex;justify-content:space-between;align-items:center;padding:0 9%}
+.d .nav b{font:700 13px/1 var(--ml-font);letter-spacing:-.02em}
+.d .nav span{display:flex;gap:4px}
+.d .nav i{width:14px;height:3px;border-radius:3px;background:currentColor;opacity:.45}
+.d .sec{height:100%;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:8% 9% 0}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;opacity:.6}
+.d h3{font:650 30px/1 var(--ml-font);letter-spacing:-.05em}
+.d .sec p{font:500 11px/1.35 var(--ml-font);opacity:.65}
+.d .btn{align-self:flex-start;margin-top:6px;padding:8px 14px;border-radius:99px;background:currentColor;font:600 10px/1 var(--ml-font)}
+.d .btn span{color:var(--bgc)}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+      // Callbacks that run after setup create their tweens through the context so ctx.revert() removes them.
+      const later = (fn) => (ctx ? ctx.add(fn) : fn());
+
+      ctx = gsap.context(() => {
+        const secs = Array.from(root.querySelectorAll('.sec'));
+        const themes = [
+          { bg: '#FFFFFF', ink: '#1D1D1F' }, { bg: '#FFF0EE', ink: '#22110B' }, { bg: '#FF4433', ink: '#FFFFFF' },
+          { bg: '#071B45', ink: '#EAF2FF' }, { bg: '#FFFFFF', ink: '#1D1D1F' },
+        ];
+        const paint = (i) => later(() => gsap.to(sc, { backgroundColor: themes[i].bg, color: themes[i].ink, '--bgc': themes[i].bg, duration: 0.8, ease: 'power2.out', overwrite: true }));
+
+        secs.forEach((sec, i) => {
+          // The section crossing the 55% line owns the page colour; scrolling back restores the previous one.
+          ScrollTrigger.create({ trigger: sec, scroller: sc, start: 'top 55%', end: 'bottom 55%', onToggle: (self) => self.isActive && paint(i) });
+          if (i) gsap.from(Array.from(sec.children), { y: 24, opacity: 0, stagger: 0.08, duration: 0.7, ease: 'power3.out', scrollTrigger: { trigger: sec, scroller: sc, start: 'top 72%', toggleActions: 'play none none reverse' } });
+        });
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 8, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a section-by-section colour shift with GSAP 3 and ScrollTrigger. Five full-height sections in one page, each with a mono counter, a large headline and one line of copy; a sticky nav (position: sticky; top: 0) with a logo and three small bars sits on top. Define a themes array of background and ink pairs: white with near-black, pale blue with deep blue, your accent with white, deep navy with pale blue, and white again. Put the page background and text colour on the scroll container (or body) and use currentColor for everything else (nav bars, button fill, muted text through opacity) so one tween recolours the whole page. For each section create ScrollTrigger.create({ trigger: section, start: 'top 55%', end: 'bottom 55%', onToggle: (self) => self.isActive && paint(i) }) where paint(i) runs gsap.to(page, { backgroundColor: themes[i].bg, color: themes[i].ink, '--bgc': themes[i].bg, duration: 0.8, ease: 'power2.out', overwrite: true }); button text uses color: var(--bgc) so it inverts. For every section after the first add gsap.from(section.children, { y: 24, opacity: 0, stagger: 0.08, duration: 0.7, ease: 'power3.out', scrollTrigger: { trigger: section, start: 'top 72%', toggleActions: 'play none none reverse' } }). Check contrast of each pair. Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) switch colours without the entrance tweens.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-center-gallery',
+    cat: 'gsap-scroll',
+    title: 'Centered scale gallery',
+    sub: 'Images grow and square off at centre',
+    libs: ['gsap'],
+    html: `<div class="sc"><div class="page">
+  <header class="hd"><span class="k">Gallery</span><h3>Five small worlds.</h3></header>
+  <figure class="pic"><div class="art"><i class="p1"></i></div><figcaption><b>Dawn ridge</b><span>01</span></figcaption></figure>
+  <figure class="pic"><div class="art"><i class="p2"></i></div><figcaption><b>Tide lines</b><span>02</span></figcaption></figure>
+  <figure class="pic"><div class="art"><i class="p3"></i></div><figcaption><b>Zebra light</b><span>03</span></figcaption></figure>
+  <figure class="pic"><div class="art"><i class="p4"></i></div><figcaption><b>Night grid</b><span>04</span></figcaption></figure>
+  <figure class="pic"><div class="art"><i class="p5"></i></div><figcaption><b>City blocks</b><span>05</span></figcaption></figure>
+</div></div>
+<div class="count"><b>01</b> / 05</div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 90%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 90%,transparent 100%)}
+.d .sc::-webkit-scrollbar{display:none}
+.d{background:#fff}
+.d .page{padding:0 0 8%}
+.d .pic:last-of-type{margin-bottom:0}
+.d .hd{padding:34px 9% 18px}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d h3{margin-top:7px;font:650 22px/1 var(--ml-font);letter-spacing:-.045em}
+.d .pic{width:82%;margin:0 auto 16%}
+.d .art{position:relative;aspect-ratio:4/3;overflow:hidden;border-radius:30px;transform:scale(.82);box-shadow:var(--ml-shadow-lg)}
+.d .art i{position:absolute;inset:-9%;display:block}
+.d .pic figcaption{margin-top:9px;display:flex;justify-content:space-between;font:600 10px/1 var(--ml-font);opacity:.25}
+.d .pic figcaption span{font:600 9px/1 var(--ml-mono);color:var(--ml-accent)}
+.d .p1{background:radial-gradient(circle at 68% 52%,#fff 0 11%,rgba(255,255,255,.3) 12% 20%,transparent 21%),linear-gradient(180deg,#4F96FF 0,#FFDCD6 60%,#FF4433 60%,#FF4433)}
+.d .p2{background:repeating-radial-gradient(circle at 30% 70%,rgba(255,255,255,.55) 0 2px,transparent 2px 14px),linear-gradient(135deg,#FF4433,#FF7A3D)}
+.d .p3{background:radial-gradient(circle at 50% 50%,#FF4433 0 22%,transparent 23%),repeating-linear-gradient(115deg,#fff 0 10px,#DCE9FF 10px 20px)}
+.d .p4{background:radial-gradient(circle,#fff 0 2.5px,transparent 3.5px) 0 0/16px 16px,linear-gradient(160deg,#1F7BFF,#0A4FC4)}
+.d .p5{background:linear-gradient(#fff,#fff) 22% 64%/22% 38% no-repeat,linear-gradient(#FF4433,#FF4433) 50% 76%/22% 28% no-repeat,linear-gradient(#7FB0FF,#7FB0FF) 78% 54%/22% 50% no-repeat,linear-gradient(180deg,#EAF2FF,#C8DDFF)}
+.d .count{position:absolute;right:9%;bottom:6%;padding:5px 9px;border-radius:99px;background:rgba(255,255,255,.9);box-shadow:var(--ml-shadow);font:600 9px/1 var(--ml-mono);letter-spacing:.06em;color:var(--ml-muted);pointer-events:none}
+.d .count b{color:var(--ml-accent)}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+
+      ctx = gsap.context(() => {
+        const pics = Array.from(root.querySelectorAll('.pic'));
+        const count = root.querySelector('.count b');
+        pics.forEach((pic, i) => {
+          const art = pic.querySelector('.art');
+          const cap = pic.querySelector('figcaption');
+          // One pass across the view: the frame grows and squares off as it reaches the centre, then eases back out.
+          const tl = gsap.timeline({
+            defaults: { ease: 'none' },
+            scrollTrigger: { trigger: pic, scroller: sc, start: 'top bottom', end: 'bottom top', scrub: true },
+          });
+          tl.fromTo(art, { scale: 0.82, borderRadius: 30 }, { scale: 1, borderRadius: 10, duration: 1 }, 0)
+            .fromTo(art.querySelector('i'), { yPercent: -7 }, { yPercent: 7, duration: 2 }, 0)
+            .fromTo(cap, { opacity: 0.25 }, { opacity: 1, duration: 1 }, 0)
+            .to(art, { scale: 0.82, borderRadius: 30, duration: 1 }, 1)
+            .to(cap, { opacity: 0.25, duration: 1 }, 1);
+          ScrollTrigger.create({
+            trigger: pic, scroller: sc, start: 'top 62%', end: 'bottom 40%',
+            onToggle: (self) => { if (self.isActive) count.textContent = '0' + (i + 1); },
+          });
+        });
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 8, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a centred scale gallery with GSAP 3 and ScrollTrigger. A vertical list of large landscape images, each about 82 percent of the container width with a caption row underneath (title and number), inside a scrolling page. Every image box has overflow hidden, an aspect ratio of 4 / 3 and starts at scale 0.82 with a 30px radius. Give each image its own timeline: gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: { trigger: figure, start: 'top bottom', end: 'bottom top', scrub: true } }). In the first half the frame goes fromTo { scale: 0.82, borderRadius: 30 } to { scale: 1, borderRadius: 10 } while the caption fades from opacity 0.25 to 1; in the second half it returns to scale 0.82 and radius 30 and the caption dims again, so the image peaks exactly as it crosses the centre. Inside each frame an oversized inner layer (inset -9 percent) drifts fromTo yPercent -7 to 7 over the full range for a parallax feel. Add a small pill counter pinned to a corner that updates in a ScrollTrigger onToggle (start 'top 62%', end 'bottom 40%') with the index of the image crossing the centre. Use real images with width and height set and alt text. Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) render every image at scale 1.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-curtain-footer',
+    cat: 'gsap-scroll',
+    title: 'Curtain footer reveal',
+    sub: 'Content lifts away to uncover a CTA',
+    libs: ['gsap'],
+    html: `<div class="sc">
+  <main class="main">
+    <header class="nav"><b>Wander</b><span><i></i><i></i><i></i></span></header>
+    <section class="hero"><span class="k">Trip planner</span><h3>Plan trips,<br>not spreadsheets.</h3><p>Maps, bookings and budgets in one calm place.</p><span class="btn">Try it free</span></section>
+    <section class="rows">
+      <div class="r"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span><div><b>Pin every stop</b><i></i></div></div>
+      <div class="r"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 3 5-7"/></svg></span><div><b>Split the budget</b><i></i></div></div>
+      <div class="r"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6M8.2 13.2l7.6 4.6"/></svg></span><div><b>Share one link</b><i></i></div></div>
+    </section>
+    <section class="quote"><p>"We planned eight days in an evening."</p><span>Tomas R., Lisbon</span></section>
+  </main>
+  <footer class="foot"><div class="fin"><span class="k">Ready when you are</span><h3>Start your<br>first trip.</h3><span class="go">Get started<em><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></em></span></div></footer>
+</div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;}
+.d .sc::-webkit-scrollbar{display:none}
+.d .main{position:relative;z-index:2;height:165%;display:flex;flex-direction:column;background:#fff;border-radius:0 0 22px 22px;box-shadow:0 20px 40px rgba(10,40,100,.2);overflow:hidden}
+.d .nav{display:flex;justify-content:space-between;align-items:center;padding:14px 9%}
+.d .nav b{font:700 13px/1 var(--ml-font);letter-spacing:-.02em}
+.d .nav span{display:flex;gap:4px}
+.d .nav i{width:14px;height:3px;border-radius:3px;background:var(--ml-bar)}
+.d .hero{padding:8% 9% 10%;display:flex;flex-direction:column;gap:7px}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d h3{font:650 26px/1.02 var(--ml-font);letter-spacing:-.045em}
+.d .hero p{font:500 11px/1.35 var(--ml-font);color:var(--ml-muted);max-width:80%}
+.d .btn{align-self:flex-start;margin-top:5px;padding:8px 14px;border-radius:99px;background:var(--ml-accent);color:#fff;font:600 10px/1 var(--ml-font)}
+.d .rows{display:flex;flex-direction:column;gap:10px;padding:0 9%}
+.d .r{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:14px;background:var(--ml-surface)}
+.d .ic{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:#fff;box-shadow:var(--ml-shadow);color:var(--ml-accent);flex:none}
+.d .ic svg{width:14px;height:14px}
+.d .r div{flex:1;display:flex;flex-direction:column;gap:6px}
+.d .r b{font:600 11px/1 var(--ml-font);letter-spacing:-.01em}
+.d .r i{height:4px;width:72%;border-radius:4px;background:var(--ml-bar)}
+.d .quote{margin-top:auto;padding:0 9% 12%;display:flex;flex-direction:column;gap:7px}
+.d .quote p{font:600 16px/1.15 var(--ml-font);letter-spacing:-.035em}
+.d .quote span{font:500 10px/1 var(--ml-font);color:var(--ml-muted)}
+.d .foot{position:sticky;bottom:0;z-index:1;height:68%;display:flex;align-items:center;padding:0 9%;background:linear-gradient(135deg,#FF4433,#FF7A3D);color:#fff}
+.d .fin{display:flex;flex-direction:column;gap:9px;align-items:flex-start}
+.d .foot .k{color:rgba(255,255,255,.82)}
+.d .foot h3{font-size:28px}
+.d .go{display:inline-flex;align-items:center;gap:7px;padding:9px 9px 9px 15px;border-radius:99px;background:#fff;color:var(--ml-accent-ink);font:600 11px/1 var(--ml-font)}
+.d .go em{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--ml-accent);color:#fff}
+.d .go svg{width:11px;height:11px}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+
+      ctx = gsap.context(() => {
+        const main = root.querySelector('.main');
+        const fin = root.querySelector('.fin');
+        const go = root.querySelector('.go');
+        // The footer sits sticky under the page. As the page's bottom edge rises from the viewport bottom to the footer's top,
+        // the footer content settles in.
+        const tl = gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: { trigger: main, scroller: sc, start: 'bottom 100%', end: 'bottom 32%', scrub: 0.5 },
+        });
+        tl.fromTo(fin, { yPercent: 24, scale: 0.88, opacity: 0.3 }, { yPercent: 0, scale: 1, opacity: 1, duration: 1 }, 0)
+          .fromTo(go, { scale: 0.8 }, { scale: 1, duration: 0.4, ease: 'back.out(2)' }, 0.6);
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 7, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a curtain footer reveal with GSAP 3 and ScrollTrigger. The page content sits above a footer that is already in place underneath. Markup inside the scroll container: a main block (position: relative; z-index: 2; opaque background; rounded bottom corners; soft shadow) followed by a footer (position: sticky; bottom: 0; z-index: 1; height about 68 percent of the viewport; your accent gradient with white text, a headline and a button). Because the footer is sticky to the bottom edge it stays put while the main block scrolls up and away, uncovering it like a curtain. Add motion with one scrubbed timeline: gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: { trigger: main, start: 'bottom 100%', end: 'bottom 32%', scrub: 0.5 } }); set the end value to 100 percent minus the footer height. Tween the footer content fromTo { yPercent: 24, scale: 0.88, opacity: 0.3 } to { yPercent: 0, scale: 1, opacity: 1 } and pop the button fromTo scale 0.8 to 1 with ease 'back.out(2)' at position 0.6. Give the footer the inert attribute until the timeline progress passes 0 (toggle it in the ScrollTrigger onUpdate) so keyboard focus cannot land on covered links. Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) skip the tween and show the footer content at full size.`,
+  });
+  ML.add({
+    id: 'gsap-scroll-timeline-spine',
+    cat: 'gsap-scroll',
+    title: 'Timeline with growing spine',
+    sub: 'A line fills and milestones pop in',
+    libs: ['gsap'],
+    html: `<div class="sc"><div class="page">
+  <header class="hd"><span class="k">Our road so far</span><h3>Five steps,<br>one product.</h3></header>
+  <div class="tl">
+    <i class="spine"><u class="fill"></u></i>
+    <article class="it"><span class="dot"></span><span class="yr">2021</span><b>Prototype</b><p>A tool we built for ourselves.</p></article>
+    <article class="it"><span class="dot"></span><span class="yr">2022</span><b>Private beta</b><p>Fifty teams, one honest list of bugs.</p></article>
+    <article class="it"><span class="dot"></span><span class="yr">2023</span><b>Public launch</b><p>Open to everyone, free to start.</p></article>
+    <article class="it"><span class="dot"></span><span class="yr">2024</span><b>Teams plan</b><p>Shared spaces and review flows.</p></article>
+    <article class="it"><span class="dot"></span><span class="yr">2025</span><b>Today</b><p>Calmer, faster, and still improving.</p></article>
+  </div>
+</div></div>`,
+    css: `
+.d .sc{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 90%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 90%,transparent 100%)}
+.d .sc::-webkit-scrollbar{display:none}
+.d{background:#fff}
+.d .page{padding:0 9% 14%}
+.d .hd{padding:30px 0 22px}
+.d .k{font:600 9px/1 var(--ml-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ml-accent)}
+.d h3{margin-top:7px;font:650 22px/1.04 var(--ml-font);letter-spacing:-.045em}
+.d .tl{position:relative;padding-left:26px}
+.d .spine{position:absolute;left:5px;top:6px;bottom:0;width:2px;border-radius:2px;background:var(--ml-line)}
+.d .fill{position:absolute;inset:0;border-radius:2px;background:var(--ml-accent);transform-origin:50% 0;transform:scaleY(0)}
+.d .it{position:relative;display:flex;flex-direction:column;gap:4px;padding:0 0 40px}
+.d .dot{position:absolute;left:-26px;top:1px;width:12px;height:12px;border-radius:50%;background:var(--ml-accent);box-shadow:0 0 0 3px #fff,0 0 0 4px var(--ml-accent-line)}
+.d .yr{align-self:flex-start;padding:3px 7px;border-radius:99px;background:var(--ml-accent-soft);color:var(--ml-accent-ink);font:600 8.5px/1 var(--ml-mono);letter-spacing:.06em}
+.d .it b{margin-top:3px;font:650 15px/1.05 var(--ml-font);letter-spacing:-.03em}
+.d .it p{font:500 10.5px/1.35 var(--ml-font);color:var(--ml-muted);max-width:92%}
+`,
+    run: (root, lib) => {
+      const { gsap, ScrollTrigger } = lib;
+      gsap.registerPlugin(ScrollTrigger);
+      const sc = root.querySelector('.sc');
+      let ctx, auto, back, resume;
+
+      ctx = gsap.context(() => {
+        const tl = root.querySelector('.tl');
+        // The spine's tip follows the 65% line of the scroller; each milestone pops when that line reaches its dot.
+        gsap.fromTo(root.querySelector('.fill'), { scaleY: 0 }, {
+          scaleY: 1, ease: 'none',
+          scrollTrigger: { trigger: tl, scroller: sc, start: 'top 65%', end: 'bottom 65%', scrub: 0.4 },
+        });
+        root.querySelectorAll('.it').forEach((it) => {
+          const dot = it.querySelector('.dot');
+          const body = [it.querySelector('.yr'), it.querySelector('b'), it.querySelector('p')];
+          gsap.set(dot, { scale: 0 });
+          gsap.set(body, { opacity: 0, x: 16 });
+          const pop = gsap.timeline({ scrollTrigger: { trigger: it, scroller: sc, start: 'top 65%', toggleActions: 'play none none reverse' } });
+          pop.to(dot, { scale: 1, duration: 0.45, ease: 'back.out(3)' }, 0)
+            .to(body, { opacity: 1, x: 0, stagger: 0.06, duration: 0.5, ease: 'power3.out' }, 0.1);
+        });
+
+        // Autoplay: a proxy value drives the scroller; the visitor's wheel or touch pauses it, and after
+        // 2.5s idle it eases home from wherever they left it.
+        const st = { p: 0 };
+        const max = () => Math.max(1, sc.scrollHeight - sc.clientHeight);
+        // Write the scroll position through ScrollTrigger and update this card's triggers in the same frame,
+        // so pinned elements never lag the scroller by a frame.
+        const writeScroll = ScrollTrigger.getScrollFunc(sc);
+        const apply = () => { writeScroll(st.p * max()); ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.update()); };
+        auto = gsap.timeline({ repeat: -1, repeatDelay: 0.6, delay: 0.5 })
+          .to(st, { p: 1, duration: 8, ease: 'power1.inOut', onUpdate: apply })
+          .to(st, { p: 0, duration: 2.4, ease: 'power2.inOut', onUpdate: apply }, '+=1.4');
+        back = gsap.to(st, { p: 0, duration: 1.4, ease: 'power2.inOut', onUpdate: apply, onComplete: () => auto.restart(), paused: true });
+        resume = gsap.delayedCall(2.5, () => { st.p = sc.scrollTop / max(); back.invalidate().restart(); }).pause();
+      }, root);
+
+      const yieldToUser = () => { auto.pause(); back.pause(); resume.restart(true); };
+      sc.addEventListener('wheel', yieldToUser, { passive: true });
+      sc.addEventListener('pointerdown', yieldToUser);
+      sc.addEventListener('touchstart', yieldToUser, { passive: true });
+
+      // The page sets root.dataset.paused offscreen / behind the modal: hold every running animation.
+      const held = new Set();
+      const sync = () => {
+        if (root.dataset.paused) {
+          for (const a of ctx.data) if (typeof a.paused === 'function' && !a.paused()) { a.paused(true); held.add(a); }
+        } else {
+          held.forEach((a) => a.paused(false));
+          held.clear();
+        }
+      };
+      const mo = new MutationObserver(sync);
+      mo.observe(root, { attributes: true, attributeFilter: ['data-paused'] });
+      sync();
+
+      // Measure this card's triggers again once fonts and layout settle.
+      const refresh = () => ScrollTrigger.getAll().forEach((t) => t.scroller === sc && t.refresh());
+      const ro = new ResizeObserver(refresh);
+      ro.observe(root);
+      document.fonts.ready.then(() => root.isConnected && refresh());
+
+      return () => {
+        mo.disconnect();
+        ro.disconnect();
+        sc.removeEventListener('wheel', yieldToUser);
+        sc.removeEventListener('pointerdown', yieldToUser);
+        sc.removeEventListener('touchstart', yieldToUser);
+        ctx.revert();
+      };
+    },
+    prompt: `Build a vertical timeline with a growing spine using GSAP 3 and ScrollTrigger. Layout: a heading, then a list of five milestone articles, each with a dot on the left edge, a small year pill, a title and one sentence; a 2px grey spine runs down the left side with an accent-coloured fill element on top of it (position absolute, inset 0, transform-origin '50% 0', scaleY 0). Grow the fill with gsap.fromTo(fill, { scaleY: 0 }, { scaleY: 1, ease: 'none', scrollTrigger: { trigger: timeline, start: 'top 65%', end: 'bottom 65%', scrub: 0.4 } }) so its tip always sits on the 65 percent line of the viewport. For each milestone set the dot to scale 0 and its text to opacity 0 and x 16, then build gsap.timeline({ scrollTrigger: { trigger: article, start: 'top 65%', toggleActions: 'play none none reverse' } }) that pops the dot with scale 1, duration 0.45, ease 'back.out(3)' and slides the text in with stagger 0.06, duration 0.5, ease 'power3.out' at position 0.1. Because both use the 65 percent line, the dot pops exactly when the spine reaches it, and scrolling back reverses it. Keep the dot centred on the spine with a white ring. Wrap in gsap.context and revert on unmount. With prefers-reduced-motion (gsap.matchMedia) show the full spine and every milestone.`,
+  });
+})();
