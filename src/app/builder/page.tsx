@@ -4,6 +4,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import ThemeToggle from '@/components/common/ThemeToggle';
 import { mountCard, exportPageHtml, SECTION_W, SCREEN_W } from '@/lib/ml-core';
+import { withBasePath } from '@/lib/base-path';
+import { analyzeImageClient } from '@/lib/client-agent/vision';
+import { matchSectionsClient } from '@/lib/client-agent/matcher';
+import { retextClient } from '@/lib/client-agent/retext';
+import { getKey, setKey } from '@/lib/client-agent/gemini';
 import type { LibraryContext, LibraryIndex, ModuleCard, SlimModule, PageTheme } from '@/lib/types';
 
 const ROLES = [
@@ -49,6 +54,7 @@ const STORE_KEY = 'automato-recipe';
 export default function BuilderPage() {
   const [ctx, setCtx] = useState<LibraryContext | null>(null);
   const [index, setIndex] = useState<LibraryIndex | null>(null);
+  const [apiKey, setApiKey] = useState<string>('');
 
   // Builder state
   const [theme, setTheme] = useState<PageTheme>({ mode: 'dark', accent: '#ff4433' });
@@ -85,12 +91,13 @@ export default function BuilderPage() {
     async function init() {
       try {
         const [loadedCtx, loadedIdx] = await Promise.all([
-          fetch('/api/ctx').then((r) => r.json()),
-          fetch('/api/catalog').then((r) => r.json()),
+          fetch(withBasePath('/library/ctx.json')).then((r) => r.json()),
+          fetch(withBasePath('/library/index.json')).then((r) => r.json()),
         ]);
-        loadedCtx.libBase = '/library/';
+        loadedCtx.libBase = withBasePath('/library/vendor/');
         setCtx(loadedCtx);
         setIndex(loadedIdx);
+        setApiKey(getKey());
 
         // Restore saved recipe if present
         const saved = localStorage.getItem(STORE_KEY);
@@ -143,7 +150,7 @@ export default function BuilderPage() {
       const slim = index.modules.find((m) => m.id === id);
       if (!slim) return null;
       try {
-        const res = await fetch(`/api/category/${slim.cat}`);
+        const res = await fetch(withBasePath(`/library/modules/${slim.cat}.json`));
         const all: ModuleCard[] = await res.json();
         for (const c of all) cardCache.current[c.id] = c;
         return cardCache.current[id] || null;
@@ -184,45 +191,52 @@ export default function BuilderPage() {
 
   // Run AI analysis and build
   const runBuild = async () => {
-    if (!uploadedFile) return;
+    if (!uploadedFile || !index) return;
     setIsBuilding(true);
     setStatusMsg('');
     setCurrentStep('read');
 
     try {
-      const formData = new FormData();
-      formData.append('image', uploadedFile);
-      if (notes) formData.append('notes', notes);
-      if (!useRetext) formData.append('retext', '0');
-
-      setCurrentStep('match');
-      const res = await fetch('/api/plan', {
-        method: 'POST',
-        body: formData,
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const res = reader.result as string;
+          const base64 = res.split(',')[1] || '';
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(uploadedFile);
       });
 
-      if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error(errJson.error || `Server responded with ${res.status}`);
+      // 1. Vision Analysis
+      const spec = await analyzeImageClient(base64Data, uploadedFile.type, notes);
+
+      // 2. Section Matching
+      setCurrentStep('match');
+      const matched = await matchSectionsClient(spec, index, base64Data, uploadedFile.type);
+
+      // 3. Text Replacement
+      setCurrentStep('copy');
+      let retextMap: Record<number, string> = {};
+      if (useRetext) {
+        retextMap = await retextClient(matched, getCardDetails);
       }
 
-      setCurrentStep('copy');
-      const data = await res.json();
-
+      // 4. Assemble Page
       setCurrentStep('draw');
-      if (data.page) {
+      if (spec.page) {
         setTheme({
-          mode: data.page.mode || 'light',
-          accent: data.page.accent || '#0A6CFF',
+          mode: spec.page.mode || 'light',
+          accent: spec.page.accent || '#0A6CFF',
         });
       }
 
-      const newSections: BuilderSection[] = (data.sections || []).map((s: any) => ({
+      const newSections: BuilderSection[] = matched.map((s) => ({
         uid: uidCounter.current++,
         id: s.pick?.id || 'h-split-stat',
         aspect: s.aspect || 16 / 9,
         role: s.role,
-        html: s.html,
+        html: retextMap[s.order] || null,
         conf: s.pick?.confidence,
         reason: s.pick?.reason,
       }));
@@ -412,7 +426,7 @@ export default function BuilderPage() {
           <Link href="/" className="brand" aria-label="numberJuan.io home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/assets/mascot.svg"
+              src={withBasePath('/assets/mascot.svg')}
               alt="Juan"
               width={34}
               height={34}
@@ -481,6 +495,36 @@ export default function BuilderPage() {
               />
               Use the text from the design
             </label>
+
+            <div>
+              <details style={{ fontSize: '0.82rem', color: 'var(--muted)', cursor: 'pointer' }}>
+                <summary style={{ fontWeight: 600 }}>✦ Gemini API Key (Optional)</summary>
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <input
+                    type="password"
+                    placeholder="AIzaSy... (leave blank for Instant Demo)"
+                    value={apiKey}
+                    onChange={(e) => {
+                      setApiKey(e.target.value);
+                      setKey(e.target.value);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '6px 8px',
+                      fontSize: '0.8rem',
+                      borderRadius: '6px',
+                      border: 'var(--border-ink-thin)',
+                      background: 'var(--bg)',
+                      color: 'var(--ink)',
+                      fontFamily: 'var(--font-mono)',
+                    }}
+                  />
+                  <small style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
+                    Stored in local browser storage only. If blank, instant client demo matching is used.
+                  </small>
+                </div>
+              </details>
+            </div>
             <button
               className="btn btn-primary"
               id="go"

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import PowerGauge from '@/components/common/PowerGauge';
+import { withBasePath } from '@/lib/base-path';
 
 export const viewport: Viewport = {
   themeColor: '#FFF9EE',
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
   description:
     'Why settle for second best when you can have Number Juan? High-octane web development and intelligent automation crafted with 1960s-70s optimism and modern AI.',
   icons: {
-    icon: '/assets/mascot.svg',
+    icon: withBasePath('/assets/mascot.svg'),
   },
   openGraph: {
     title: 'numberJuan.io — The #1 Web & Automation Studio',

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import ThemeToggle from '@/components/common/ThemeToggle';
 import { mountCard, exportCardHtml, SCREEN_W } from '@/lib/ml-core';
+import { withBasePath } from '@/lib/base-path';
 import type { LibraryContext, LibraryIndex, ModuleCard, SlimModule, Category } from '@/lib/types';
 
 const GROUPS: Array<[string, string[]]> = [
@@ -98,10 +99,10 @@ export default function LibraryPage() {
     async function init() {
       try {
         const [loadedCtx, loadedIdx] = await Promise.all([
-          fetch('/api/ctx').then((r) => r.json()),
-          fetch('/api/catalog').then((r) => r.json()),
+          fetch(withBasePath('/library/ctx.json')).then((r) => r.json()),
+          fetch(withBasePath('/library/index.json')).then((r) => r.json()),
         ]);
-        loadedCtx.libBase = '/library/';
+        loadedCtx.libBase = withBasePath('/library/vendor/');
         setCtx(loadedCtx);
         setIndex(loadedIdx);
       } catch (err) {
@@ -114,7 +115,7 @@ export default function LibraryPage() {
   const loadCategoryModules = useCallback(async (catId: string): Promise<ModuleCard[]> => {
     if (categoryCache.current[catId]) return categoryCache.current[catId];
     try {
-      const res = await fetch(`/api/category/${catId}`);
+      const res = await fetch(withBasePath(`/library/modules/${catId}.json`));
       const data = await res.json();
       categoryCache.current[catId] = data;
       return data;
@@ -238,7 +239,7 @@ export default function LibraryPage() {
         <Link href="/" className="brand" aria-label="numberJuan.io home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/assets/mascot.svg"
+            src={withBasePath('/assets/mascot.svg')}
             alt="Juan"
             width={34}
             height={34}

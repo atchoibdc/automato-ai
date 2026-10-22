@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ThemeToggle from './ThemeToggle';
+import { withBasePath } from '@/lib/base-path';
 
 interface NavbarProps {
   activeTab?: 'home' | 'creator' | 'library' | 'builder';
@@ -27,7 +28,7 @@ export default function Navbar({ activeTab = 'home' }: NavbarProps) {
         <Link href="/" className="brand" aria-label="numberJuan.io home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/assets/mascot.svg"
+            src={withBasePath('/assets/mascot.svg')}
             alt="Juan mascot"
             className="brand-mascot"
             width={44}

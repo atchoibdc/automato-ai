@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/common/Navbar';
 import Footer from '@/components/common/Footer';
+import { withBasePath } from '@/lib/base-path';
 
 interface LogLine {
   text: string;
@@ -216,7 +217,7 @@ export default function HomePage() {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/assets/hero-juan.jpg"
+                  src={withBasePath('/assets/hero-juan.jpg')}
                   alt="Juan at the retro atomic mainframe"
                   className="hero-polaroid-img"
                   width={800}

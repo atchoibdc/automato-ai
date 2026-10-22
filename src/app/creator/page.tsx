@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/common/Navbar';
 import Footer from '@/components/common/Footer';
+import { withBasePath } from '@/lib/base-path';
 
 export default function CreatorPage() {
   const [counts, setCounts] = useState({ exp: 0, delivery: 0, plugins: 0, ux: 0 });
@@ -119,7 +120,7 @@ export default function CreatorPage() {
 
               <div className="hero-actions">
                 <a
-                  href="/assets/Christopher-Ross-dela-Cruz-CV.pdf"
+                  href={withBasePath('/assets/Christopher-Ross-dela-Cruz-CV.pdf')}
                   download
                   className="btn btn-primary"
                 >
@@ -178,7 +179,7 @@ export default function CreatorPage() {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/assets/creator.jpg"
+                  src={withBasePath('/assets/creator.jpg')}
                   alt="Portrait of Christopher Ross B. dela Cruz"
                   className="hero-polaroid-img"
                   style={{ aspectRatio: '1/1' }}
@@ -391,7 +392,7 @@ export default function CreatorPage() {
                     ✦ Email Christopher Directly
                   </a>
                   <a
-                    href="/assets/Christopher-Ross-dela-Cruz-CV.pdf"
+                    href={withBasePath('/assets/Christopher-Ross-dela-Cruz-CV.pdf')}
                     download
                     className="btn btn-secondary"
                   >

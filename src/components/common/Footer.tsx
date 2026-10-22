@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { withBasePath } from '@/lib/base-path';
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -9,7 +10,7 @@ export default function Footer() {
         <Link href="/" className="brand" aria-label="numberJuan.io home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/assets/mascot.svg"
+            src={withBasePath('/assets/mascot.svg')}
             alt="Juan mascot"
             className="brand-mascot"
             width={44}

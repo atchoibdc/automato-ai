@@ -3,6 +3,7 @@
 //   shadow root = <style>STAGE_BASE + css</style><div class="d">html</div>, then run(root, lib) -> cleanup?
 // Section cards are authored on a small "logical" stage and scaled up uniformly to fit the page width.
 import type { LibraryContext, ModuleCard, PageTheme } from './types';
+import { withBasePath } from './base-path';
 
 export const SECTION_W = 560; // logical width of a section card stage
 export const SCREEN_W = 1024; // app screens use a 1024x768 canvas
@@ -56,8 +57,9 @@ const libLoads: Record<string, Promise<any>> = {};
 export function loadLibs(
   libsMeta: LibraryContext['libsMeta'] = {},
   keys: string[] = [],
-  libBase = '/library/'
+  libBase?: string
 ): Promise<any> {
+  const base = libBase || withBasePath('/library/');
   if (typeof window === 'undefined') return Promise.resolve({});
   return Promise.all(
     keys.map(
@@ -65,7 +67,7 @@ export function loadLibs(
         (libLoads[k] ||= new Promise((res, rej) => {
           if (!libsMeta[k]) return res({});
           const s = document.createElement('script');
-          s.src = libBase + libsMeta[k].bundle;
+          s.src = base + libsMeta[k].bundle;
           s.onload = () => res((window as any)[libsMeta[k].global]);
           s.onerror = () => rej(new Error(`could not load ${s.src}`));
           document.head.appendChild(s);
@@ -109,7 +111,7 @@ export function mountCard(
 
   if (card.run) {
     if (card.libs?.length) {
-      loadLibs(ctx.libsMeta, card.libs, ctx.libBase || '/library/').then(start, (e) =>
+      loadLibs(ctx.libsMeta, card.libs, ctx.libBase || withBasePath('/library/')).then(start, (e) =>
         console.error('[card]', card.id, e)
       );
     } else {
