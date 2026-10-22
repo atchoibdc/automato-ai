@@ -5,19 +5,32 @@
   "type": "module",
   "description": "numberJuan.io — Mid-Century Retro-Cartoon Web & Automation Studio with 650+ UI Library & AI Wireframe Machine.",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
     "crawl": "node scripts/crawl-library.mjs",
     "catalog": "node scripts/build-catalog.mjs",
     "thumbs": "node scripts/render-thumbs.mjs",
     "setup:library": "node scripts/crawl-library.mjs && node scripts/build-catalog.mjs",
-    "start": "node server/index.js",
-    "dev": "node --watch server/index.js",
+    "server:legacy": "node server/index.js",
     "test": "node --test \"tests/*.test.mjs\"",
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "autoprefixer": "^10.6.1",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^1.4.5-lts.1",
+    "next": "^16.4.2",
+    "postcss": "^8.5.31",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "playwright": "^1.47.0"
